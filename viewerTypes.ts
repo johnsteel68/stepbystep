@@ -1,0 +1,42 @@
+import type { SheetMetalState, ProfileGeometryData, FlatCornerRadii, HoleShape, HolePatternConfig } from './sheetGeometry';
+import type { HoleSizeField } from './holeEditing';
+
+export interface ViewerProps {
+  dimensions: SheetMetalState;
+  temporaryDimension?: import('./useDimensionFeedback').DimensionFeedback | null;
+  profileData: ProfileGeometryData;
+  realistic: boolean;
+  grainDirection?: 'length' | 'width';
+  activeBendIndex?: number;
+  showActiveBendCue?: boolean;
+  activeLegIndex?: number;
+  showActiveLegCue?: boolean;
+  cornerRadiusView?: boolean;
+  focusedCorner?: keyof FlatCornerRadii | null;
+  embedded?: boolean;
+  placementMode?: boolean;
+  placementTargetLegId?: string | null;
+  placementDraft?: { legId: string; dist: number; offset: number; holeIndex?: number; valid: boolean } | null;
+  placementStage?: 'select-wing' | 'choose-shape' | 'choose-pattern' | 'position' | 'configure-single' | 'preview';
+  placementHoleShape?: HoleShape;
+  placementHoleOrientation?: 'along_length' | 'along_width';
+  placementHoleCornerRadius?: number;
+  placementPatternChoice?: 'single' | 'corners' | 'custom' | null;
+  placementPatternConfig?: HolePatternConfig;
+  onHolePlacement?: (legId: string, dist: number, offset: number) => void;
+  onPlacementHoleSizeChange?: (legId: string, field: HoleSizeField, value: number) => void;
+  onPlacementCandidate?: (draft: { legId: string; dist: number; offset: number; valid: boolean } | null) => void;
+  onPlacementWingSelect?: (legId: string) => void;
+  onPlacementShapeSelect?: (shape: HoleShape) => void;
+  onPlacementHoleOrientationChange?: (orientation: 'along_length' | 'along_width') => void;
+  onPlacementHoleCornerRadiusChange?: (radius: number) => void;
+  onPlacementPatternSelect?: (mode: 'single' | 'corners' | 'custom') => void;
+  onPlacementPatternChange?: (config: HolePatternConfig) => void;
+  onPlacementPatternConfirm?: (config: HolePatternConfig) => void;
+  onHoleDeleteRequest?: (legId: string, holeIndex: number) => void;
+  onHoleMoveRequest?: (legId: string, holeIndex: number) => void;
+  onCancelPlacement?: () => void;
+  onLegLengthChange?: (index: number, value: number) => void;
+  onLegLengthEdit?: (index: number, editing: boolean) => void;
+  onWidthChange?: (value: number) => void;
+}

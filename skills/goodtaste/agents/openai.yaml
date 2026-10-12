@@ -1,0 +1,5 @@
+interface:
+  display_name: "GoodTaste"
+  short_description: "Create beautiful, distinctive mobile interfaces"
+  brand_color: "#0E5A56"
+  default_prompt: "Use $goodtaste to art-direct and build a beautiful mobile interface from this brief."

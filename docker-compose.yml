@@ -1,0 +1,32 @@
+services:
+  app:
+    container_name: step-generator
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ${REGISTRY_IMAGE:-registry.steelhub.john-steel.com/step-generator}:${IMAGE_TAG:-latest}
+    pull_policy: always
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    networks:
+      - web-network
+    cpus: 0.5
+    mem_limit: 512m
+    pids_limit: 100
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=128m
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+networks:
+  web-network:
+    external: true

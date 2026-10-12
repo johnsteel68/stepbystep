@@ -1,0 +1,6 @@
+{
+  "description": "A professional sheet metal profile editor (1 to 3 bends) and STEP file generator for mechanical engineering and sheet metal fabrication.",
+  "requestFramePermissions": [],
+  "name": "L-Plate STEP Editor",
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
