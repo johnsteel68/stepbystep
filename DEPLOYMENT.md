@@ -30,7 +30,21 @@ Si le compose du serveur doit être mis à jour, son administrateur doit
 installer `docker-compose.yml` puis lancer `docker compose pull app` et
 `docker compose up -d --no-build app` dans le dossier de déploiement.
 
-## Git
+## Publication via GitHub Actions
 
-Aucun remote n'est actuellement configuré dans cette copie locale.
-L'URL du dépôt est nécessaire avant de pousser les changements Git.
+Si Docker local est indisponible, le workflow manuel
+`.github/workflows/publish-docker.yml` construit l'image AMD64,
+valide Nginx avec les restrictions du conteneur, puis publie les tags
+du commit et `latest` au registry. Les identifiants sont stockés dans
+les secrets du dépôt `STEP_REGISTRY_USER` et `STEP_REGISTRY_PASSWORD`.
+
+```sh
+gh workflow run publish-docker.yml --repo johnsteel68/stepbystep --ref main
+gh run list --repo johnsteel68/stepbystep --workflow publish-docker.yml
+```
+
+Attendre une exécution réussie avant de lancer le redémarrage SSH.
+
+## Dépôt Git
+
+Le dépôt est `https://github.com/johnsteel68/stepbystep`, branche `main`.
