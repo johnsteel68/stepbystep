@@ -16,7 +16,16 @@ Le script construit et pousse une image `linux/amd64` dans le registry.
 Le build du site est copié depuis `dist/client`; `dist/server` est le service
 MCP distinct et n'est pas exécuté par ce conteneur Nginx.
 
-Après publication réussie, déclencher le redémarrage avec la clé dédiée :
+Après publication réussie, télécharger et recréer le conteneur depuis
+le dossier Compose sur le serveur avec un accès autorisant Docker :
+
+```sh
+docker compose pull app
+docker compose up -d --no-build app
+```
+
+La clé dédiée ci-dessous redémarre le conteneur existant. La vérification
+du 12 octobre 2026 a montré qu'elle ne charge pas la nouvelle image :
 
 ```sh
 ssh -T -p 2222 -i ~/.ssh/vps_restart_key johnsteel_admin@72.61.108.238
@@ -43,7 +52,8 @@ gh workflow run publish-docker.yml --repo johnsteel68/stepbystep --ref main
 gh run list --repo johnsteel68/stepbystep --workflow publish-docker.yml
 ```
 
-Attendre une exécution réussie avant de lancer le redémarrage SSH.
+Attendre une exécution réussie avant de télécharger et recréer le conteneur
+sur le serveur. Le seul redémarrage SSH ne suffit pas à appliquer l'image.
 
 ## Dépôt Git
 
