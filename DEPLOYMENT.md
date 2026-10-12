@@ -1,0 +1,36 @@
+# Mise à jour de stepbystep.john-steel.com
+
+Le site est servi par Nginx sur le port interne 8080, derrière Caddy,
+sur le réseau Docker externe `web-network`. Aucun port hôte n'est publié.
+
+## Publication depuis une machine avec Docker opérationnel
+
+Renseigner `.env` depuis `.env.example`, sans versionner le mot de passe.
+Le serveur de connexion doit correspondre au domaine de `REGISTRY_IMAGE`.
+
+```sh
+sh deploy-docker.sh
+```
+
+Le script construit et pousse une image `linux/amd64` dans le registry.
+Le build du site est copié depuis `dist/client`; `dist/server` est le service
+MCP distinct et n'est pas exécuté par ce conteneur Nginx.
+
+Après publication réussie, déclencher le redémarrage avec la clé dédiée :
+
+```sh
+ssh -T -p 2222 -i ~/.ssh/vps_restart_key johnsteel_admin@72.61.108.238
+```
+
+Cet accès exécute une commande dédiée au conteneur et ne fournit pas
+nécessairement un shell. `-T` évite la demande de terminal PTY.
+Vérifier ensuite le site et le chargement des nouveaux fichiers JavaScript.
+
+Si le compose du serveur doit être mis à jour, son administrateur doit
+installer `docker-compose.yml` puis lancer `docker compose pull app` et
+`docker compose up -d --no-build app` dans le dossier de déploiement.
+
+## Git
+
+Aucun remote n'est actuellement configuré dans cette copie locale.
+L'URL du dépôt est nécessaire avant de pousser les changements Git.

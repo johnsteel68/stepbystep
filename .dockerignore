@@ -7,3 +7,12 @@ dist
 dist-ssr
 *.log
 README.md
+Textures
+FontSources
+output
+tmp
+freecad
+plugin-update
+materiaux-john-steel
+Exemple de step OK
+*.pdf

@@ -6,8 +6,7 @@ services:
       dockerfile: Dockerfile
     image: ${REGISTRY_IMAGE:-registry.steelhub.john-steel.com/step-generator}:${IMAGE_TAG:-latest}
     pull_policy: always
-    ports:
-      - "8080:8080"
+    platform: linux/amd64
     restart: unless-stopped
     networks:
       - web-network
