@@ -1,0 +1,42 @@
+name: Publish production Docker image
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-image
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      REGISTRY: registry.steelhub.john-steel.com
+      IMAGE: registry.steelhub.john-steel.com/step-generator
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build AMD64 image
+        run: docker build --pull --platform linux/amd64 --tag "$IMAGE:$GITHUB_SHA" .
+      - name: Validate read-only Nginx configuration
+        run: >-
+          docker run --rm --read-only --cap-drop ALL
+          --security-opt no-new-privileges:true
+          --tmpfs /tmp:rw,noexec,nosuid,size=128m
+          --entrypoint nginx "$IMAGE:$GITHUB_SHA" -t
+      - name: Log in to registry
+        env:
+          REGISTRY_USER: ${{ secrets.STEP_REGISTRY_USER }}
+          REGISTRY_PASSWORD: ${{ secrets.STEP_REGISTRY_PASSWORD }}
+        run: printf '%s' "$REGISTRY_PASSWORD" | docker login "$REGISTRY" --username "$REGISTRY_USER" --password-stdin
+      - name: Publish version and latest
+        run: |
+          docker push "$IMAGE:$GITHUB_SHA"
+          docker tag "$IMAGE:$GITHUB_SHA" "$IMAGE:latest"
+          docker push "$IMAGE:latest"
+      - name: Log out
+        if: always()
+        run: docker logout "$REGISTRY"
