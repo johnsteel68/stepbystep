@@ -8,7 +8,7 @@ import { useDimensionFeedback } from './useDimensionFeedback';
 import { normalizeFormedBlank, blankHoleAllowed } from './formedBlank';
 import { createDefaultProject } from './projectDefaults';
 import { useManufacturingExports } from './hooks/useManufacturingExports';
-import { downloadExport } from './exportDownload';
+import OrderButton from './components/OrderButton';
 import type { GrainDirection } from './technicalDrawing';
 import { resizeDraftHole, explicitHoles, saveHoles, holeSeries, clearAllHoles, type HoleSizeField } from './holeEditing';
 import { WorkflowHeading } from './components/Controls';
@@ -36,7 +36,6 @@ import {
   Ruler, 
   Plus,
   Download, 
-  Upload,
   AlertCircle, 
   AlertTriangle,
   ChevronRight,
@@ -758,7 +757,7 @@ export default function App({ embedded = false }: { embedded?: boolean }) {
   };
 
   const { loading, pdfLoading, sendingToDeck, readyDeck, setReadyDeck,
-    handleDownloadPlan, handleDownload, handleSendToDeck } = useManufacturingExports({
+    handleDownload, handleSendToDeck } = useManufacturingExports({
       state, grainDirection, feasibility, setError, setSuccessMsg, setShowFeasibilityModal,
     });
 
@@ -1128,7 +1127,7 @@ export default function App({ embedded = false }: { embedded?: boolean }) {
 
         {/* 9. COMMANDER */}
         <div className={`${!isStepVisible(9) ? '!hidden ' : ''}${stepClass(9)} workflow-order-9 border-t border-hardware-border pt-5`}>
-          <WorkflowHeading collapsible={proMode} number={headingNumber(9)} title="Commander" hint="Télécharger ou envoyer la pièce au deck" open={openStep === 9} onClick={() => toggleStep(9)} />
+          <WorkflowHeading collapsible={proMode} number={headingNumber(9)} title="Commander" hint="Préparer votre commande chez John Steel" open={openStep === 9} onClick={() => toggleStep(9)} />
           {openStep === 9 && <div className="export-zone">
           <div className="order-summary">
             <span className="eyebrow">Votre pièce sur mesure</span>
@@ -1140,70 +1139,15 @@ export default function App({ embedded = false }: { embedded?: boolean }) {
               <ShieldCheck size={15} />{feasibility.isFeasible ? 'Consulter les vérifications' : 'Vérifier les points à corriger'}<ChevronRight size={15} />
             </button>
           </div>
-          <button 
-            onClick={handleDownload} 
-            disabled={loading || pdfLoading || sendingToDeck}
-            className={`w-full py-3.5 px-4 rounded-xl font-bold flex items-center justify-center gap-2 shadow-xl transition-all duration-300 text-sm ${
-              loading 
-                ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed border border-zinc-700' 
-                : !feasibility.isFeasible
-                ? 'bg-rose-950/80 hover:bg-rose-900/90 text-rose-200 border border-rose-600 shadow-rose-900/30'
-                : 'bg-pink-600 hover:bg-pink-500 text-white shadow-pink-500/35 border border-pink-300'
-            }`}
-          >
-            {loading ? (
-              <>
-                <Loader2 size={16} className="animate-spin" />
-                <span>Génération ISO-10303-21...</span>
-              </>
-            ) : !feasibility.isFeasible ? (
-              <>
-                <ShieldAlert size={16} className="text-rose-300" />
-                <span>Export Bloqué (Non Faisable - Voir Audit)</span>
-              </>
-            ) : (
-              <>
-                <ShieldCheck size={16} className="text-white" />
-                <span>Télécharger STEP + plan PDF</span>
-              </>
-            )}
-          </button>
+          <OrderButton onOrder={handleSendToDeck} busy={loading || pdfLoading || sendingToDeck} feasible={feasibility.isFeasible} />
+          {!feasibility.isFeasible && <p className="step-intro" role="status">Corrigez les points signalés dans les vérifications avant de commander.</p>}
           <div className="technical-plan-options">
-            <p>Plan atelier : cotes, perçages et face de finition F1.</p>
+            <p>Plan atelier généré automatiquement : cotes, perçages et face de finition.</p>
             {state.finish === 'stainless-brushed' && <p>Brossage : {grainDirection === 'length' ? 'le long des ailes' : 'en travers des ailes'}. Modifiable à l’étape Nuance / finition.</p>}
-            <button type="button" onClick={handleDownloadPlan} disabled={loading || pdfLoading || sendingToDeck}>
-              {pdfLoading ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />}
-              Télécharger le plan PDF seul
-            </button>
           </div>
-          <button
-            type="button"
-            onClick={handleSendToDeck}
-            disabled={loading || pdfLoading || sendingToDeck || !feasibility.isFeasible}
-            className={`w-full rounded-xl border px-4 py-3 text-sm font-bold flex items-center justify-center gap-2 transition-all duration-200 ${
-              sendingToDeck
-                ? 'cursor-wait border-pink-300/40 bg-pink-500/20 text-pink-100'
-                : !feasibility.isFeasible
-                ? 'cursor-not-allowed border-zinc-700 bg-zinc-800 text-zinc-500'
-                : 'border-pink-300/60 bg-pink-500/10 text-pink-200 hover:bg-pink-500/20 hover:border-pink-300'
-            }`}
-          >
-            {sendingToDeck ? (
-              <>
-                <Loader2 size={15} className="animate-spin" />
-                <span>Envoi vers le deck…</span>
-              </>
-            ) : (
-              <>
-                <Upload size={15} />
-                <span>Envoyer dans le deck</span>
-              </>
-            )}
-          </button>
-          <p className="technical-plan-note">Le deck reçoit le STEP ; le plan PDF se télécharge sur votre appareil.</p>
+          <p className="technical-plan-note">Votre pièce est transmise au deck John Steel pour préparer la commande. Le plan PDF se télécharge automatiquement sur votre appareil.</p>
           {readyDeck && <div className="technical-plan-options" role="status">
-            <a href={readyDeck.url}>Ouvrir mon deck John Steel →</a>
-            <button type="button" onClick={() => downloadExport(readyDeck.pdf, readyDeck.name)}>Retélécharger le plan de la pièce envoyée</button>
+            <a href={readyDeck.url}>Continuer ma commande chez John Steel →</a>
           </div>}
           </div>}
         </div>
