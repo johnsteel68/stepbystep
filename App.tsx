@@ -758,6 +758,7 @@ export default function App({ embedded = false }: { embedded?: boolean }) {
 
   const { loading, pdfLoading, sendingToDeck, readyDeck, setReadyDeck,
     handleDownload, handleSendToDeck } = useManufacturingExports({
+      guided: !proMode,
       state, grainDirection, feasibility, setError, setSuccessMsg, setShowFeasibilityModal,
     });
 
@@ -1179,6 +1180,7 @@ export default function App({ embedded = false }: { embedded?: boolean }) {
           activeLegIndex={viewerLegIndex}
           showActiveLegCue={showLegLengthCue}
           cornerRadiusView={cornerRadiusView && !placementMode}
+          textFlatView={openStep === 12 && (proMode || guidedWorkflowStep(guidedStep) === 12)}
           focusedCorner={cornerRadiusView && independentCornerRadii ? activeCornerRadius : null}
           realistic={true} 
           embedded={embedded}

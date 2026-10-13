@@ -12,6 +12,7 @@ export interface ViewerProps {
   activeLegIndex?: number;
   showActiveLegCue?: boolean;
   cornerRadiusView?: boolean;
+  textFlatView?: boolean;
   focusedCorner?: keyof FlatCornerRadii | null;
   embedded?: boolean;
   placementMode?: boolean;

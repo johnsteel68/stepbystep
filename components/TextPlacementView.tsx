@@ -4,6 +4,7 @@ import { blankFrame } from '../formedBlank';
 import { stencilCells, createStencilPlacementValidator, applyStencilText, fitStencilText, textMinimumHeight, type StencilText } from '../stencilText';
 import { explicitHoles } from '../holeEditing';
 import TextCutout from './TextCutout';
+import FlatTextDimensions from './FlatTextDimensions';
 import { cornerTextRotation } from './textRotationGesture';
 import { normalizeTextRotation } from '../textRotation';
 
@@ -34,6 +35,7 @@ export default function TextPlacementView({ state, draft: externalDraft, onMove 
     if (animationFrame.current !== null) cancelAnimationFrame(animationFrame.current);
   }, []);
   const [zoom, setZoom] = useState(1);
+  const [showFlatDimensions, setShowFlatDimensions] = useState(true);
   // A zoomed viewport must not chase the moving selection: that changes the
   // pointer-to-metal mapping while the user is dragging or resizing.
   const [viewportCenter, setViewportCenter] = useState<{ x: number; y: number } | null>(null);
@@ -64,7 +66,7 @@ export default function TextPlacementView({ state, draft: externalDraft, onMove 
   }, [state, draft?.legId, draft?.config.text, draft?.config.font, draft?.config.height, validationRotation]);
   const cx = start + (reverse ? leg.length - (draft?.config.x ?? leg.length / 2) : draft?.config.x ?? leg.length / 2);
   const cy = draft?.config.y ?? width / 2;
-  const pad = Math.max(length, width) * .08;
+  const pad = Math.max(length, width) * .13;
   const boxWidth = (length + pad * 2) / zoom, boxHeight = (width + pad * 2) / zoom;
   const bounds = cuts.length ? {
     left: Math.min(...cuts.map(c => c.dist - (c.length ?? c.diam!) / 2)),
@@ -149,6 +151,7 @@ export default function TextPlacementView({ state, draft: externalDraft, onMove 
     <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-slate-700">
       <span>Placement du texte · vue à plat {state.bendCount > 0 ? `· aile ${leg.id}` : ''}</span>
       <div className="flex flex-wrap items-center gap-2">
+        <button type="button" className="rounded border bg-white px-3 py-2" aria-pressed={showFlatDimensions} onClick={() => setShowFlatDimensions(value => !value)}>Cotes à plat</button>
         <button type="button" className="rounded border bg-white px-3 py-2" disabled={!draft?.config.text.trim()} onClick={() => {
           if (!draft) return;
           try { const config = fitStencilText(state, draft.legId, { ...draft.config, x: leg.length / 2, y: width / 2 }); onMove({ legId: draft.legId, ...config }); } catch {}
@@ -218,6 +221,7 @@ export default function TextPlacementView({ state, draft: externalDraft, onMove 
         <g transform={`translate(${cx},${cy}) rotate(${draft?.config.rotation ?? 0})`} fill="black" visibility={issue ? 'hidden' : 'visible'}>{cuts.map((c, i) => <TextCutout key={i} cut={c} />)}</g>
       </mask></defs>
       <polygon points={frame.outline.map(p => `${p.x},${p.y}`).join(' ')} fill="#cbd5e1" stroke="#64748b" strokeWidth={1} vectorEffect="non-scaling-stroke" mask={`url(#${cutoutMask})`} />
+      {showFlatDimensions && <FlatTextDimensions state={state} length={length} width={width} zoom={zoom} />}
       {legs.slice(0, -1).map((_, i) => { const x = legs.slice(0, i + 1).reduce((sum, item) => sum + item.length, 0); return <line key={i} x1={x} x2={x} y1={0} y2={width} stroke="#e83c69" strokeDasharray="4 4" vectorEffect="non-scaling-stroke" />; })}
       <g data-text-block transform={`translate(${cx},${cy}) rotate(${draft?.config.rotation ?? 0})`} fill="none" visibility={issue ? 'hidden' : 'visible'}>
         <g stroke="#99294b" strokeWidth={.3}>{cuts.map((c, i) => <TextCutout key={i} cut={c} />)}</g>

@@ -9,6 +9,7 @@ import { generateSheetProfile } from './sheetGeometry';
 import { orbitAngle, orbitPositionAtAngle } from './viewer/camera/rotation';
 import { FlatCornerRadiusMarker, HoleNearestEdgeDimensions } from './viewer/annotations/Dimensions';
 import PlanarWingDimension from './viewer/annotations/PlanarWingDimension';
+import FlatSheetDimensions from './viewer/annotations/FlatSheetDimensions';
 import { WingBadge, WingLabel, HoleNumberLabel, HOLE_NUMBER_BADGE_COLOR } from './viewer/annotations/Badges';
 import { annotationOpenings, wingLabelPoint } from './viewer/annotations/labelLayout';
 import { getHoleRadii } from './sheetGeometry';
@@ -298,6 +299,7 @@ function FlatPlacementSheet({
   onCandidate,
   onDeleteHole,
   cornerRadiusPreview = false,
+  showFlatDimensions = false,
 }: {
   dimensions: SheetMetalState;
   realistic: boolean;
@@ -312,6 +314,7 @@ function FlatPlacementSheet({
   onCandidate?: (candidate: { legId: string; dist: number; offset: number; valid: boolean } | null) => void;
   onDeleteHole?: (legId: string, holeIndex: number) => void;
   cornerRadiusPreview?: boolean;
+  showFlatDimensions?: boolean;
 }) {
   const blankPlan = dimensions.blankShape ? blankBendPlan(dimensions) : null;
   const legs = dimensions.legs.slice(0, dimensions.bendCount + 1).map((leg, index) => blankPlan ? { ...leg, length: blankPlan.wings[index].length } : leg);
@@ -491,6 +494,7 @@ function FlatPlacementSheet({
       <mesh geometry={sheetGeometry} material={realistic ? sheetMaterials.material : undefined} onPointerMove={onPointerMove} onPointerOut={() => setHover(null)} onClick={onClick} receiveShadow={false} castShadow>
         {!realistic && <meshStandardMaterial color="#b8c0c8" metalness={0.62} roughness={0.38} />}
       </mesh>
+      {showFlatDimensions && <FlatSheetDimensions state={dimensions} length={totalLength} width={dimensions.width} />}
       {legs.map((leg, index) => {
         const centerX = starts[index] + leg.length / 2;
         const selected = stage !== 'preview' && leg.id === (hover?.legId || draft?.legId || targetLegId);
@@ -1338,6 +1342,7 @@ export default function Viewer({
   activeLegIndex = 0,
   showActiveLegCue = false,
   cornerRadiusView = false,
+  textFlatView = false,
   focusedCorner = null,
   realistic: initialRealistic = true, 
   grainDirection = 'length',
@@ -1702,6 +1707,7 @@ export default function Viewer({
             onCandidate={onPlacementCandidate}
             onDeleteHole={onHoleDeleteRequest}
             cornerRadiusPreview={!placementMode}
+            showFlatDimensions={showDimensions && !textFlatView}
           />
         ) : cornerVisualPhase === 'unfolding' || cornerVisualPhase === 'folding' ? (
           <UnfoldingSheet dimensions={dimensions} restY={restY} unfolding={cornerVisualPhase === 'unfolding'} realistic={realistic} />
@@ -1733,7 +1739,7 @@ export default function Viewer({
             onLegLengthChange={onLegLengthChange}
             onLegLengthEdit={onLegLengthEdit}
             onWidthChange={onWidthChange}
-            showDimensions={showDimensions || (!!temporaryDimension && !dimensions.blankShape && /longueur|largeur/i.test(temporaryDimension.label))}
+            showDimensions={!textFlatView && (showDimensions || (!!temporaryDimension && !dimensions.blankShape && /longueur|largeur/i.test(temporaryDimension.label)))}
             showDimensionInfo={showDimensionInfo}
           />
         </PhysicsDropGroup>}

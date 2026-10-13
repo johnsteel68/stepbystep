@@ -212,9 +212,9 @@
 .grain-choice-check { position: absolute; right: 5px; top: 5px; color: #ff8aad; opacity: 0; }
 .grain-choice-option:has(input:checked) .grain-choice-check { opacity: 1; }
 .grain-choice > p { margin: 8px 0 0; font-size: .75rem; color: #b5bfce; line-height: 1.45; }
-.planar-dimension-value { border: 0; background: transparent; color: #323843; padding: 2px 4px; white-space: nowrap; font: 500 16px/1.2 var(--font-sans); cursor: pointer; }
+.planar-dimension-value { border: 0; background: transparent; color: #323843; padding: 2px 4px; white-space: nowrap; font: 500 24px/1.2 var(--font-sans); cursor: pointer; }
 .planar-dimension-value:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-.planar-dimension-input { width: 90px; padding: 3px 5px; border: 1px solid var(--primary); background: #fff; color: #323843; font: 500 16px/1.2 var(--font-sans); }
+.planar-dimension-input { width: 110px; padding: 3px 5px; border: 1px solid var(--primary); background: #fff; color: #323843; font: 500 24px/1.2 var(--font-sans); }
 .finish-options legend { margin-bottom: 9px; }
 .finish-option-grid { display: grid; grid-template-columns: minmax(0,1fr); gap: 8px; }
 .finish-option { min-width: 0; min-height: 58px; padding: 9px; display: flex; align-items: center; gap: 9px; text-align: left; border: 1px solid #ffffff14; border-radius: 8px; background: #141a22; color: #dce1ea; cursor: pointer; transition: border-color .18s, background .18s, transform .18s; }

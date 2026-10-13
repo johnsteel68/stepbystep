@@ -173,8 +173,11 @@ export function createProjectLink(state: SheetMetalState, grainDirection: GrainD
   // Never share localhost/file URLs, login callback codes, query tokens or other fragments.
   const local = ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname);
   const base = url.protocol === 'https:' && !local && url.origin !== LEGACY_PROJECT_ORIGIN ? `${url.origin}/` : PROJECT_SITE;
-  // Query parameters survive the hosted site's sign-in return URL; fragments do not.
-  return `${base}?${PROJECT_QUERY}=v1.${token}`;
+  // Keep small links compatible with the legacy sign-in return flow. Detailed
+  // cutouts can exceed HTTP request-line limits; fragments stay client-side
+  // and are already understood by readProjectFromUrl, without a server upload.
+  const queryLink = `${base}?${PROJECT_QUERY}=v1.${token}`;
+  return queryLink.length <= 2000 ? queryLink : `${base}${PROJECT_HASH}${token}`;
 }
 
 export function readProjectFromUrl(currentUrl: string): SharedProject | null {

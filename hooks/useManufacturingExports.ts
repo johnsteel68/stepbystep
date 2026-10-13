@@ -6,6 +6,7 @@ import { downloadExport, createManufacturingArchive } from '../exportDownload';
 import { createProjectLink } from '../projectSharing';
 
 type Options = {
+  guided: boolean;
   state: SheetMetalState;
   grainDirection: GrainDirection;
   feasibility: SheetMetalFeasibilityReport;
@@ -19,7 +20,7 @@ type Options = {
  * Keep heavy WASM/PDF dependencies lazy so none are required at startup.
  * Only this hook owns job status; the editor owns configuration and messages.
  */
-export function useManufacturingExports({ state, grainDirection, feasibility, setError, setSuccessMsg, setShowFeasibilityModal }: Options) {
+export function useManufacturingExports({ state, grainDirection, feasibility, guided, setError, setSuccessMsg, setShowFeasibilityModal }: Options) {
   const [loading, setLoading] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [sendingToDeck, setSendingToDeck] = useState(false);
@@ -43,6 +44,10 @@ export function useManufacturingExports({ state, grainDirection, feasibility, se
   };
 
   const handleDownloadPlan = async () => {
+    if (guided) {
+      setError('Le téléchargement du plan PDF est désactivé en mode guidé.');
+      return;
+    }
     if (!feasibility.isFeasible) {
       setError('Plan atelier bloqué : corrigez les points de fabricabilité avant de transmettre les cotes.');
       setShowFeasibilityModal(true);
@@ -72,6 +77,12 @@ export function useManufacturingExports({ state, grainDirection, feasibility, se
       // This keeps the initial editor responsive and avoids paying the STEP
       // generation cost while configuring the part.
       const snapshot = structuredClone(state);
+      if (guided) {
+        const file = await createStepExportFile(snapshot);
+        downloadExport(file, file.name);
+        setSuccessMsg('Fichier STEP téléchargé.');
+        return;
+      }
       const [file, plan] = await Promise.all([createStepExportFile(snapshot), createPlan(snapshot)]);
       downloadExport(await createManufacturingArchive(file, plan.pdf), file.name.replace(/\.step$/i, '_Dossier.zip'));
       setSuccessMsg('Dossier téléchargé : STEP AP214 et plan technique PDF.');
@@ -92,9 +103,21 @@ export function useManufacturingExports({ state, grainDirection, feasibility, se
 
     setSendingToDeck(true);
     setError(null);
+    setReadyDeck(null);
+    let phase: 'preparation' | 'upload' = 'preparation';
     try {
       const snapshot = structuredClone(state);
+      if (guided) {
+        // Guided ordering has no PDF dependency: a drawing failure must not
+        // prevent sending the manufactured STEP to the shop.
+        const file = await createStepExportFile(snapshot);
+        phase = 'upload';
+        const deckUrl = await uploadStepToDeck(file);
+        window.location.assign(deckUrl);
+        return;
+      }
       const [file, plan] = await Promise.all([createStepExportFile(snapshot), createPlan(snapshot)]);
+      phase = 'upload';
       const deckUrl = await uploadStepToDeck(file);
       // The deck endpoint analyses one STEP; PDF attachment support is not
       // established. Download the companion plan, then let the user navigate
@@ -104,7 +127,7 @@ export function useManufacturingExports({ state, grainDirection, feasibility, se
       setSuccessMsg('STEP envoyé au deck. Votre plan PDF est téléchargé séparément ; ouvrez le deck ci-dessous.');
     } catch (e) {
       console.error(e);
-      const reason = e instanceof TypeError
+      const reason = e instanceof TypeError && phase === 'upload'
         ? 'Connexion au service impossible (réseau ou autorisation du navigateur).'
         : e instanceof Error ? e.message : 'Erreur inconnue.';
       setError(`Échec de l’envoi dans le deck : ${reason}`);

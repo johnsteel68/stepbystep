@@ -11,6 +11,21 @@ const part = (): SheetMetalState => ({
   bends: [1, 2, 3, 4].map((n, i) => ({ id: String(n), angle: 90, direction: i % 2 ? -1 : 1 })),
   cornerRadius: 0, cornerRadii: { startLeft: 2, startRight: 3, endLeft: 4, endRight: 5 },
 });
+
+test('detailed projects use a fragment instead of an oversized HTTP request line', () => {
+  const state = part();
+  let seed = 42;
+  const random = () => { seed = seed * 16807 % 2147483647; return seed / 2147483647; };
+  state.legs[0].hasHole = true;
+  state.legs[0].holePositions = Array.from({ length: 200 }, () => ({ dist: 10 + random() * 60, offset: 10 + random() * 100, diam: 5, shape: 'round' }));
+  const link = createProjectLink(state, 'length'), url = new URL(link);
+  assert.ok(link.length > 2000);
+  assert.equal(url.pathname, '/'); assert.equal(url.search, '');
+  assert.ok(url.hash.startsWith(PROJECT_HASH));
+  assert.deepEqual(readProjectFromUrl(link), { state, grainDirection: 'length' });
+  const legacy = `${url.origin}/?projet=${url.hash.slice('#projet='.length)}`;
+  assert.deepEqual(readProjectFromUrl(legacy), readProjectFromUrl(link));
+});
 const hashFor = (value: unknown) => PROJECT_HASH + Buffer.from(deflateSync(strToU8(JSON.stringify(value)))).toString('base64url');
 test('star sharing keeps its editable branches and height', () => {
   const state = { ...part(), bendCount: 0, blankShape: 'star' as const, blankLength: 100, blankWidth: 100, blankBranchCount: 8, blankBranchHeight: 15 };

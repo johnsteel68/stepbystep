@@ -8,9 +8,9 @@ import { wingDimensionLayout, type WingDimensionLayout } from './wingDimensionLa
 
 /** Arrowheads and label retain a comfortable pixel size, while every point
  * and the text plane remain attached to the wing through orbit and zoom. */
-function PlanarAnnotation({ layout, name, onChange, onEditing, max }: {
+export function PlanarAnnotation({ layout, name, onChange, onEditing, max, flat = false }: {
   layout: WingDimensionLayout; name: string; onChange?: (value: number) => void;
-  onEditing?: (editing: boolean) => void; max?: number;
+  onEditing?: (editing: boolean) => void; max?: number; flat?: boolean;
 }) {
   const label = useRef<Group>(null), first = useRef<Group>(null), last = useRef<Group>(null);
   const { viewport, size } = useThree();
@@ -33,7 +33,7 @@ function PlanarAnnotation({ layout, name, onChange, onEditing, max }: {
     // Cotations are annotations, not physical lettering: gently compensate
     // foreshortening without turning the text into a screen-facing billboard.
     const heightCorrection = 1 / Math.max(.4, faceCosine);
-    group.position.copy(middle).addScaledVector(layout.outward, units * 13 * heightCorrection);
+    group.position.copy(middle).addScaledVector(layout.outward, units * 18 * heightCorrection);
     group.scale.set(units, units * heightCorrection, units);
     if (scratch.worldNormal.copy(scratch.z).transformDirection(parent.matrixWorld).dot(scratch.eye) < 0) scratch.y.negate();
     scratch.a.copy(layout.start).applyMatrix4(parent.matrixWorld).project(camera);
@@ -55,14 +55,14 @@ function PlanarAnnotation({ layout, name, onChange, onEditing, max }: {
       <Line points={[[-7, -3, 0], [0, 0, 0], [-7, 3, 0]]} color="#323843" lineWidth={1.5} depthTest={false} />
     </group>
     <group ref={label} position={middle}>
-      <Html transform distanceFactor={400} center style={{ pointerEvents: onChange ? 'auto' : 'none' }}>
+      <Html transform={!flat} distanceFactor={flat ? undefined : 400} center zIndexRange={[12, 0]} style={{ pointerEvents: onChange ? 'auto' : 'none' }}>
         {editing && onChange ? <input autoFocus type="number" aria-label={name} defaultValue={layout.value} min={1} max={max} step={.1}
           className="planar-dimension-input" onPointerDown={event => event.stopPropagation()}
           onKeyDown={event => { if (event.key === 'Enter') event.currentTarget.blur(); }}
           onBlur={event => { const value = Number(event.currentTarget.value); if (Number.isFinite(value) && value > 0) onChange(value); setEditing(false); onEditing?.(false); }} />
           : onChange ? <button type="button" className="planar-dimension-value" aria-label={`${name} : ${layout.value} millimètres. Modifier`}
             onPointerDown={event => event.stopPropagation()} onClick={begin}>{layout.value.toLocaleString('fr-FR', { maximumFractionDigits: 1 })} mm</button>
-          : <span className="planar-dimension-value">{layout.value.toLocaleString('fr-FR', { maximumFractionDigits: 1 })} mm</span>}
+          : <span className="planar-dimension-value" style={{ display: 'inline-block', transform: flat && Math.abs(direction.y) > .5 ? 'rotate(-90deg)' : undefined }}>{layout.value.toLocaleString('fr-FR', { maximumFractionDigits: 1 })} mm</span>}
       </Html>
     </group>
   </group>;
