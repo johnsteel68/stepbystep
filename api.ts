@@ -20,6 +20,72 @@ const ensureOpenCascade = createRetryableInitializer(async () => {
   setOC(oc);
 });
 
+type ContourPoint = { x: number; y: number };
+
+/**
+ * Reduce the point count of a closed stencil outline before it becomes a STEP
+ * cutting tool. Font outlines are sampled for the live preview; preserving
+ * every sample can create hundreds of tiny B-Rep faces that overwhelm the
+ * shop's analyzer. A 0.1 mm chord tolerance is visually negligible at part
+ * scale while keeping the exported solid manifold and accurate.
+ */
+function simplifyClosedContour(points: ContourPoint[], tolerance = 0.1): ContourPoint[] {
+  if (points.length < 5) return points;
+
+  // Treat a repeated final point as the implicit closing segment, not a vertex.
+  const polygon = points.length > 2
+    && Math.hypot(points[0].x - points[points.length - 1].x, points[0].y - points[points.length - 1].y) < 1e-9
+    ? points.slice(0, -1)
+    : points;
+  if (polygon.length < 5) return points;
+
+  // Split the loop along a long diagonal so ordinary Douglas-Peucker
+  // simplification can operate on two open chains without losing closure.
+  let start = 0, opposite = 1, diameterSquared = -1;
+  for (let i = 0; i < polygon.length; i++) {
+    const dx = polygon[i].x - polygon[start].x, dy = polygon[i].y - polygon[start].y;
+    if (dx * dx + dy * dy > diameterSquared) { opposite = i; diameterSquared = dx * dx + dy * dy; }
+  }
+  start = opposite;
+  opposite = (start + 1) % polygon.length;
+  diameterSquared = -1;
+  for (let i = 0; i < polygon.length; i++) {
+    const dx = polygon[i].x - polygon[start].x, dy = polygon[i].y - polygon[start].y;
+    if (dx * dx + dy * dy > diameterSquared) { opposite = i; diameterSquared = dx * dx + dy * dy; }
+  }
+
+  const simplifyOpen = (chain: ContourPoint[]): ContourPoint[] => {
+    const threshold = tolerance * tolerance;
+    const visit = (first: number, last: number): number[] => {
+      const a = chain[first], b = chain[last], vx = b.x - a.x, vy = b.y - a.y;
+      const lengthSquared = vx * vx + vy * vy;
+      let largest = threshold, index = -1;
+      for (let i = first + 1; i < last; i++) {
+        const point = chain[i];
+        const t = lengthSquared === 0 ? 0 : Math.max(0, Math.min(1, ((point.x - a.x) * vx + (point.y - a.y) * vy) / lengthSquared));
+        const dx = point.x - a.x - t * vx, dy = point.y - a.y - t * vy;
+        const distanceSquared = dx * dx + dy * dy;
+        if (distanceSquared > largest) { largest = distanceSquared; index = i; }
+      }
+      if (index < 0) return [first, last];
+      return [...visit(first, index).slice(0, -1), ...visit(index, last)];
+    };
+    return visit(0, chain.length - 1).map(index => chain[index]);
+  };
+
+  const arc = (from: number, to: number): ContourPoint[] => {
+    const result: ContourPoint[] = [];
+    for (let i = from;; i = (i + 1) % polygon.length) {
+      result.push(polygon[i]);
+      if (i === to) return result;
+    }
+  };
+  const firstArc = simplifyOpen(arc(start, opposite));
+  const secondArc = simplifyOpen(arc(opposite, start));
+  const simplified = [...firstArc.slice(0, -1), ...secondArc.slice(0, -1)];
+  return simplified.length >= 3 ? simplified : points;
+}
+
 function getHoleContour2D(
   shape: 'round' | 'oblong' | 'square' | 'rect' | 'octagonal',
   diam: number,
@@ -190,7 +256,7 @@ function getHoleDefinitionForPosition(leg: any, position: { shape?: any; diam?: 
     holeLength: position.length ?? leg.holeLength,
     holeWidth: position.width ?? leg.holeWidth,
     holeOrientation: position.orientation || leg.holeOrientation,
-    holeContour: position.contour,
+    holeContour: position.contour ? simplifyClosedContour(position.contour) : undefined,
   };
 }
 
