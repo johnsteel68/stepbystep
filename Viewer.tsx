@@ -7,7 +7,8 @@ import { createFormedBlankGeometry } from './viewer/geometry/formedBlank';
 import { blankBendPlan, blankHoleAllowed } from './formedBlank';
 import { generateSheetProfile } from './sheetGeometry';
 import { orbitAngle, orbitPositionAtAngle } from './viewer/camera/rotation';
-import { FlatCornerRadiusMarker, SegmentDimension, WidthDimension, HoleNearestEdgeDimensions } from './viewer/annotations/Dimensions';
+import { FlatCornerRadiusMarker, HoleNearestEdgeDimensions } from './viewer/annotations/Dimensions';
+import PlanarWingDimension from './viewer/annotations/PlanarWingDimension';
 import { WingBadge, WingLabel, HoleNumberLabel, HOLE_NUMBER_BADGE_COLOR } from './viewer/annotations/Badges';
 import { annotationOpenings, wingLabelPoint } from './viewer/annotations/labelLayout';
 import { getHoleRadii } from './sheetGeometry';
@@ -20,6 +21,8 @@ import { PlacementCameraTransition, CornerRadiusCameraTransition, AutoFrameModel
 import { createVectorCutterGeometry, createOblongBufferGeometry, createRoundedRectBufferGeometry, createFlatHolePreviewGeometry, createOctagonBufferGeometry, createFlatCornerCutGeometry } from './viewer/geometry/cutters';
 import { numberPreviewCutouts } from './viewer/annotations/previewCutouts';
 import { useImportedPbrMaterial } from './viewer/materials/useSheetMaterial';
+import { filmPeelCorner } from './viewer/materials/protectiveFilm';
+import ProtectiveFilmCorner from './viewer/materials/ProtectiveFilmCorner';
 import { explicitHoles, holeSeries } from './holeEditing';
 import type { ViewerProps } from './viewerTypes';
 import React, { useMemo, useRef, useState, useEffect } from 'react';
@@ -868,7 +871,8 @@ export const SheetMetalGroup = React.memo(function SheetMetalGroup({
   const finish = dimensions.finish || (dimensions.material === 'Steel' ? 'steel-raw' : dimensions.material === 'Aluminum' ? 'aluminum-raw' : 'stainless-brushed');
   const usePbrMaterial = realistic && !profileData.collision.hasCollision;
   const selectedGrain = exportOnly ? exportGrainDirection : grainDirection;
-  const sheetMaterials = useImportedPbrMaterial(finish, realistic, finish === 'stainless-brushed' && selectedGrain === 'width' ? Math.PI / 2 : 0);
+  const filmPeel = useMemo(() => exportOnly ? undefined : filmPeelCorner(dimensions, profileData.legTransforms), [dimensions, profileData.legTransforms, exportOnly]);
+  const sheetMaterials = useImportedPbrMaterial(finish, realistic, finish === 'stainless-brushed' && selectedGrain === 'width' ? Math.PI / 2 : 0, filmPeel);
 
   const baseGeometry = useMemo(() => {
     if (dimensions.blankShape) return createFormedBlankGeometry(dimensions, sheetMaterials.oneSidedRelief);
@@ -1047,6 +1051,7 @@ export const SheetMetalGroup = React.memo(function SheetMetalGroup({
           leg.tip.y + leg.direction.y * dist + side * leg.normal.y * dimensions.thickness / 2, offset],
       }));
     }) }}>
+      {usePbrMaterial && filmPeel && <ProtectiveFilmCorner peel={filmPeel} />}
       {showActiveBendCue && (
         <ActiveBendCue
           dimensions={dimensions}
@@ -1222,11 +1227,11 @@ export const SheetMetalGroup = React.memo(function SheetMetalGroup({
       {/* 3D Cotes d'atelier vers les arêtes les plus proches */}
       {showDimensions && profileData.legTransforms.slice(0, dimensions.bendCount + 1).map((legT) => (
         <React.Fragment key={`segment-dim-${legT.id}`}>
-          <SegmentDimension legT={legT} dimensions={dimensions} profileBounds={profileData.bounds} profilePathPoints={profileData.pathPoints} onLegLengthChange={onLegLengthChange} onLegLengthEdit={onLegLengthEdit} showInnerDimension={showActiveLegCue && legT.index === activeLegIndex} />
+          <PlanarWingDimension leg={legT} state={dimensions} kind="length" onChange={onLegLengthChange ? value => onLegLengthChange(legT.index, value) : undefined} onEditing={onLegLengthEdit ? editing => onLegLengthEdit(legT.index, editing) : undefined} />
         </React.Fragment>
       ))}
       {showDimensions && profileData.legTransforms[0] && (
-        <WidthDimension legT={profileData.legTransforms[0]} dimensions={dimensions} profileBounds={profileData.bounds} onWidthChange={onWidthChange} />
+        <PlanarWingDimension leg={profileData.legTransforms[dimensions.bendCount]} state={dimensions} kind="width" onChange={onWidthChange} />
       )}
 
       {showDimensions && hoveredHoleKey && activeHoleInstances.map(({ holeLeg, dist, offset, index: patternIndex }) => {

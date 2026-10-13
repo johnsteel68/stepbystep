@@ -34,3 +34,24 @@ test('material cards use a full-width row layout at desktop and mobile sizes', (
   assert.match(css, /\.material-option \{[^}]*grid-template-columns: 28px minmax\(0,1fr\) 18px; min-height: 44px/);
   assert.match(css, /\.material-option:has\(input:focus-visible\)/);
 });
+
+test('finish cards retain the selected finish, workshop filtering and click action', () => {
+  let selected: string | undefined;
+  const tree = componentModule.exports.FinishControls({ material: 'Aluminum', value: 'aluminum-filmed', bendCount: 1, onChange: (id: string) => { selected = id; } });
+  const html = renderToStaticMarkup(tree);
+  const available = sheet.getAvailableSheetFinishes('Aluminum', 1);
+  assert.equal((html.match(/<button/g) || []).length, available.length);
+  assert.equal((html.match(/aria-pressed="true"/g) || []).length, 1);
+  assert.match(html, /Aluminium Brut filmé/);
+  assert.doesNotMatch(html, /Aluminium Anodisé/);
+  tree.props.children[1].props.children[0].props.onClick();
+  assert.equal(selected, available[0]);
+});
+
+test('finish cards stay full-width on small screens with unclipped names and visible keyboard focus', () => {
+  const css = readFileSync(new URL('../index.css', import.meta.url), 'utf8');
+  assert.match(css, /\.finish-option-grid \{[^}]*grid-template-columns: minmax\(0,1fr\)/);
+  assert.doesNotMatch(css, /\.finish-option-grid \{[^}]*repeat\(2/);
+  assert.doesNotMatch(css, /\.finish-option-copy strong \{[^}]*line-clamp/);
+  assert.match(css, /\.finish-option:focus-visible \{/);
+});

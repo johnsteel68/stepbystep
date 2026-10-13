@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import type { SheetFinish } from '../../sheetGeometry';
 import { TEXTURE_SETS, FINISH_TEXTURE_PROFILES, type TextureSet } from './textureCatalog';
 import { ResilientTextureLoader } from './ResilientTextureLoader';
+import { applyProtectiveFilm, type FilmPeel } from './protectiveFilm';
 
 type SheetMaterialBundle = {
   material: THREE.MeshPhysicalMaterial | THREE.MeshPhysicalMaterial[];
@@ -11,7 +12,7 @@ type SheetMaterialBundle = {
   oneSidedRelief: boolean;
 };
 
-export function useImportedPbrMaterial(finish: SheetFinish, realistic: boolean, textureRotation = 0): SheetMaterialBundle {
+export function useImportedPbrMaterial(finish: SheetFinish, realistic: boolean, textureRotation = 0, filmPeel?: FilmPeel): SheetMaterialBundle {
   const profile = FINISH_TEXTURE_PROFILES[finish];
   const set: TextureSet = TEXTURE_SETS[profile.set];
   const maxAnisotropy = useThree(({ gl }) => gl.capabilities.getMaxAnisotropy());
@@ -89,7 +90,7 @@ export function useImportedPbrMaterial(finish: SheetFinish, realistic: boolean, 
       textured.metalnessMap = null;
       textured.color.set('#ffffff');
     }
-    if (roughnessMap && !profile.mirrorFace) {
+    if (roughnessMap && !profile.mirrorFace && !profile.protectiveFilm) {
       // Three.js multiplies roughness by the map's green channel. Preserve its
       // variation while lifting dark pixels that produce sharp studio glints.
       textured.onBeforeCompile = (shader) => {
@@ -102,6 +103,14 @@ export function useImportedPbrMaterial(finish: SheetFinish, realistic: boolean, 
            #endif`,
         );
       };
+    }
+
+    if (profile.protectiveFilm) {
+      textured.normalMap = null;
+      textured.bumpMap = null;
+      textured.clearcoat = .06;
+      textured.clearcoatRoughness = .65;
+      applyProtectiveFilm(textured, filmPeel);
     }
 
     if (!profile.oneSidedRelief) {
@@ -121,7 +130,7 @@ export function useImportedPbrMaterial(finish: SheetFinish, realistic: boolean, 
     // invisible (notably a flat tread plate with its first hole). Keep the
     // cut finish visually identical, but give the subtraction its own clone.
     return { material: [smooth, textured, smooth], cutMaterial: smooth.clone(), oneSidedRelief: true };
-  }, [alphaMap, colorMap, finish, heightMap, metalnessMap, normalMap, profile, realistic, roughnessMap]);
+  }, [alphaMap, colorMap, finish, heightMap, metalnessMap, normalMap, profile, realistic, roughnessMap, filmPeel]);
 
   useEffect(() => () => {
     const materials = Array.isArray(bundle.material) ? bundle.material : [bundle.material];

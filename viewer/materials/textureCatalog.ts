@@ -169,6 +169,7 @@ type FinishTextureProfile = {
   oneSidedRelief?: boolean;
   leatherRelief?: boolean;
   mirrorFace?: boolean;
+  protectiveFilm?: boolean;
 };
 
 export const FINISH_TEXTURE_PROFILES: Record<SheetFinish, FinishTextureProfile> = {
@@ -177,7 +178,7 @@ export const FINISH_TEXTURE_PROFILES: Record<SheetFinish, FinishTextureProfile> 
   'steel-larme': { set: 'textureCanTread', roughness: 0.62, metalness: 0.88, bumpScale: 1.5, normalScale: 1, clearcoat: 0.1, smoothTint: '#8d929a', oneSidedRelief: true },
   'steel-corten': { set: 'corten', roughness: 0.82, metalness: 0.28, bumpScale: 0.12, normalScale: 0.24, clearcoat: 0.015 },
   'aluminum-raw': { set: 'blendAluminumRaw', roughness: 0.62, metalness: 0.78, bumpScale: 0, normalScale: 0.22, clearcoat: 0.08 },
-  'aluminum-filmed': { set: 'aluminum', roughness: 0.7, metalness: 0.62, bumpScale: 0.025, normalScale: 0.12, clearcoat: 0.015, tint: '#eef1f4' },
+  'aluminum-filmed': { set: 'aluminum', roughness: 0.34, metalness: 1, bumpScale: 0, normalScale: 0, clearcoat: 0.015, tint: '#ffffff', smoothTint: '#bcc3cb', oneSidedRelief: true, protectiveFilm: true },
   'aluminum-antitrace': { set: 'brushed', roughness: 0.6, metalness: 0.78, bumpScale: 0.035, normalScale: 0.24, clearcoat: 0.08, tint: '#e8edf1' },
   'aluminum-anodized': { set: 'aluminum', roughness: 0.52, metalness: 0.82, bumpScale: 0.035, normalScale: 0.18, clearcoat: 0.18, tint: '#e4eaf0' },
   'aluminum-perforated': { set: 'perforated', roughness: 0.64, metalness: 0.8, bumpScale: 0.02, normalScale: 0.32, clearcoat: 0.04 },

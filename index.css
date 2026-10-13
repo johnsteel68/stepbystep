@@ -212,16 +212,20 @@
 .grain-choice-check { position: absolute; right: 5px; top: 5px; color: #ff8aad; opacity: 0; }
 .grain-choice-option:has(input:checked) .grain-choice-check { opacity: 1; }
 .grain-choice > p { margin: 8px 0 0; font-size: .75rem; color: #b5bfce; line-height: 1.45; }
+.planar-dimension-value { border: 0; background: transparent; color: #323843; padding: 2px 4px; white-space: nowrap; font: 500 16px/1.2 var(--font-sans); cursor: pointer; }
+.planar-dimension-value:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.planar-dimension-input { width: 90px; padding: 3px 5px; border: 1px solid var(--primary); background: #fff; color: #323843; font: 500 16px/1.2 var(--font-sans); }
 .finish-options legend { margin-bottom: 9px; }
-.finish-option-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
+.finish-option-grid { display: grid; grid-template-columns: minmax(0,1fr); gap: 8px; }
 .finish-option { min-width: 0; min-height: 58px; padding: 9px; display: flex; align-items: center; gap: 9px; text-align: left; border: 1px solid #ffffff14; border-radius: 8px; background: #141a22; color: #dce1ea; cursor: pointer; transition: border-color .18s, background .18s, transform .18s; }
 .finish-option:hover { border-color: #647086; }
+.finish-option:focus-visible { outline: 2px solid #f58eaa; outline-offset: 3px; }
 .finish-option:active { transform: scale(.985); }
 .finish-option.is-selected { border-color: #e83c69a6; background: #e83c6915; box-shadow: inset 0 2px 0 #e83c69; }
 .finish-option-copy { min-width: 0; flex: 1; display: grid; gap: 3px; }
-.finish-option-copy strong { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; font-size: 12px; line-height: 1.25; text-wrap: pretty; }
+.finish-option-copy strong { display: block; font-size: 12px; line-height: 1.25; text-wrap: pretty; overflow-wrap: anywhere; }
 .finish-option-copy small { color: #a2aec0; font-size: 11px; line-height: 1.35; text-wrap: pretty; }
-.finish-swatch { flex: 0 0 28px; width: 28px; height: 28px; aspect-ratio: 1; border: 1px solid #ffffff38; border-radius: 4px; background-color: #aeb6bf; }
+.finish-swatch { flex: 0 0 40px; width: 40px; height: 40px; aspect-ratio: 1; border: 1px solid #ffffff38; border-radius: 4px; background-color: #aeb6bf; }
 .finish-swatch--steel-corten { background: radial-gradient(ellipse at 25% 25%,#d68a50,transparent 35%),radial-gradient(ellipse at 70% 68%,#713c25,transparent 42%),linear-gradient(120deg,#a66039,#75432f); }
 .finish-swatch--steel-galvanized { background: url('/textures/blend-galvanized/image-1.jpg') center / cover; }
 .finish-swatch--steel-raw { background: url('/textures/blend-raw-steel/image-1.jpg') center / cover; }
@@ -491,7 +495,7 @@ button[data-tooltip]:focus-visible::after { opacity: 1; }
   .mode-switch button { min-height: 30px; padding-inline: 9px; font-size: 11px; }
   .control-scroll { padding: 8px 10px; }
   .control-rail .workflow-step { padding: 9px; }
-  .finish-option-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 5px; }
+  .finish-option-grid { gap: 5px; }
   .finish-option { min-height: 46px; padding: 6px 8px; }
   .guided-footer { padding-inline: 10px; }
   .viewer-tool-rail { top: 8px; right: 8px; }
