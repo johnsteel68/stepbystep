@@ -8,8 +8,10 @@ import { BUTLER_GLYPHS } from './butlerGlyphs.ts';
 import { GOOGLE_STENCIL_FONTS } from './googleStencilFonts.ts';
 import { GOOGLE_STENCIL_DATA } from './googleStencilGlyphs.ts';
 import { getGoogleStencilGlyphs } from './googleStencilLoader.ts';
+import { COMPACT_STENCIL_FONTS, compactMinimumHeight, isCompactStencil, styleCompactCuts } from './compactStencil.ts';
 
 export const STENCIL_FONTS = [
+  ...COMPACT_STENCIL_FONTS,
   ...GOOGLE_STENCIL_FONTS,
   { id: 'stencil-sunfonts', label: 'Sunfonts Stencil', description: 'Technique et géométrique · contours vectoriels' },
   { id: 'stencil-butler', label: 'Butler Stencil Black', description: 'Empattements élégants · Fabian De Smet · fabiandesmet.com' },
@@ -70,7 +72,7 @@ export function textAvailabilityIssue(state: SheetMetalState): string | null {
   if (['steel-larme', 'aluminum-larme', 'stainless-antislip', 'aluminum-perforated'].includes(state.finish))
     return 'Texte découpé indisponible sur les surfaces larmées, antidérapantes ou perforées.';
   if (!Number.isFinite(state.thickness) || state.thickness <= 0) return 'Choisissez une épaisseur valide.';
-  const edge = textSafetyMargin(state.thickness), height = textMinimumHeight(state.thickness, 'stencil-sign');
+  const edge = textSafetyMargin(state.thickness), height = compactMinimumHeight(state.thickness);
   const fits = state.legs.slice(0, state.bendCount + 1).some((leg, index) => {
     const ends = state.bendCount === 0 ? 0 : index > 0 && index < state.bendCount ? 2 : 1;
     const length = leg.length - ends * getHoleBendClearance(state.thickness) - (2 - ends) * edge;
@@ -122,6 +124,7 @@ const industrialAlphabet: Record<string, string> = {
   ' ':'00000/00000/00000/00000/00000/00000/00000',
 };
 export function textMinimumHeight(thickness: number, font: StencilFont = 'pixel') {
+  if (isCompactStencil(font)) return compactMinimumHeight(thickness);
   // Conservative provisional rules, not a John Steel manufacturing guarantee.
   // A bridge splits a row into two half-strokes: each remaining half must
   // still be at least as wide as the provisional minimum cutting feature.
@@ -142,7 +145,8 @@ function continuousStencil(config: StencilText, thickness: number): HolePosition
   if (![config.height, config.x, config.y].every(Number.isFinite) || ![0, 90].includes(config.rotation)) throw new Error('Réglage de texte invalide.');
   const minimum = textMinimumHeight(thickness, config.font);
   if (config.height < minimum) throw new Error(`Hauteur minimale : ${minimum} mm pour cette police et cette épaisseur.`);
-  const compact = config.font === 'stencil-sign';
+  const micro = isCompactStencil(config.font);
+  const compact = micro || config.font === 'stencil-sign';
   const rowCount = compact ? 5 : 7, columnCount = compact ? 3 : 5;
   const bridge = Math.max(2, thickness), unit = config.height / rowCount;
   const aspect = config.font === 'stencil-condensed' ? .75 : config.font === 'stencil-wide' ? 1.25 : 1;
@@ -167,7 +171,10 @@ function continuousStencil(config: StencilText, thickness: number): HolePosition
         // central counter in O. Adjacent rows meet to
         // form continuous cutouts; there is no grid of retained pixel gaps.
         const bandOffset = compact ? unit : 2 * unit;
-        const bands = character === '4' ? [-bandOffset, 0, bandOffset] : [-bandOffset, bandOffset];
+        // Les nouveaux dessins gardent chaque portion de trait >= unit - bridge/2.
+        // À H = 8 × bridge et 5 rangées, cette portion vaut au moins 1,1 × bridge.
+        const bands = micro ? [-config.height / 2 + unit, -config.height / 2 + 4 * unit]
+          : character === '4' ? [-bandOffset, 0, bandOffset] : [-bandOffset, bandOffset];
         let intervals: number[][] = [[top, top + unit]];
         for (const band of bands) intervals = intervals.flatMap(([low, high]) =>
           [[low, Math.min(high, band - bridge / 2)], [Math.max(low, band + bridge / 2), high]].filter(([a, b]) => b > a));
@@ -200,7 +207,7 @@ function continuousStencil(config: StencilText, thickness: number): HolePosition
       previous.dist = (low + high) / 2; previous.length = high - low;
     }
   }
-  return merged;
+  return micro ? styleCompactCuts(merged, config.font!, thickness) : merged;
 }
 export function stencilCells(config: StencilText, thickness: number): HolePosition[] {
   if (config.font && !STENCIL_FONTS.some(item => item.id === config.font)) throw new Error('Police stencil inconnue.');

@@ -13,15 +13,15 @@ import { getGoogleStencilGlyphs } from '../googleStencilLoader.ts';
 const flat = () => ({ ...createDefaultProject(), bendCount: 0, width: 150, legs: createDefaultProject().legs.map(l => ({ ...l, length: 200 })) });
 const config = { text: 'A1', height: 30, x: 100, y: 75, rotation: 0 as const };
 test('font picker offers distinct designs while preserving legacy variant identifiers', () => {
-  assert.equal(SELECTABLE_STENCIL_FONTS.length, 32);
+  assert.equal(SELECTABLE_STENCIL_FONTS.length, 36);
   for (const id of ['stencil-condensed', 'stencil-wide', 'stencil-tenada-condensed', 'stencil-tenada-wide']) {
     assert.ok(STENCIL_FONTS.some(font => font.id === id));
     assert.ok(!SELECTABLE_STENCIL_FONTS.some(font => font.id === id));
   }
 });
 test('distinct Google stencil designs decode once and retain their original outlines when moved', () => {
-  assert.equal(GOOGLE_STENCIL_FONTS.length, 26);
-  assert.equal(new Set(GOOGLE_STENCIL_FONTS.map(font => font.id)).size, 26);
+  assert.equal(GOOGLE_STENCIL_FONTS.length, 27);
+  assert.equal(new Set(GOOGLE_STENCIL_FONTS.map(font => font.id)).size, 27);
   const outlines = new Set<string>();
   for (const font of GOOGLE_STENCIL_FONTS) {
     const glyphs = getGoogleStencilGlyphs(font.id)!;
@@ -31,7 +31,7 @@ test('distinct Google stencil designs decode once and retain their original outl
     stencilCells({ ...config, font: font.id, height: textMinimumHeight(2, font.id), x: 700, y: 300, rotation: 90 }, 2);
     assert.equal(JSON.stringify(glyphs), original, 'Dragging/rotation must never mutate the shared font cache');
   }
-  assert.equal(outlines.size, 26, 'These are different designs, not stretched duplicates');
+  assert.equal(outlines.size, 27, 'These are different designs, not stretched duplicates');
 });
 test('terminal-wing vector letters retain their handedness after validation', () => {
   const settings = { ...config, text: 'RORO', font: 'stencil-tenada' as const, height: 72, x: 250, y: 100 };
@@ -78,7 +78,7 @@ test('text is excluded on patterned finishes, but existing text remains removabl
   }
 });
 test('thickness eligibility depends on room for bridges and letters, not an arbitrary cap', () => {
-  assert.ok(textAvailabilityIssue({ ...flat(), thickness: 20 }));
+  assert.ok(textAvailabilityIssue({ ...flat(), thickness: 20, width: 100, legs: flat().legs.map(l => ({ ...l, length: 100 })) }));
   assert.equal(textAvailabilityIssue({ ...flat(), thickness: 20, width: 1000, legs: flat().legs.map(l => ({ ...l, length: 1000 })) }), null);
 });
 for (const font of STENCIL_FONTS.filter(f => f.id.startsWith('stencil'))) test(`${font.label}: counters stay attached and features respect the thickness minimum`, () => {

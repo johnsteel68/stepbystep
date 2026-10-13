@@ -111,7 +111,7 @@ function leg(value: unknown, index: number): LegConfig {
     if (typeof t.text !== 'string' || t.text.length > 16 || ![0, 90].includes(t.rotation as number)) throw new Error('Texte invalide');
     result.cutText = { text: t.text, height: number(t.height, 1, 1000), x: number(t.x), y: number(t.y), rotation: t.rotation as 0 | 90 };
     if (t.font !== undefined) {
-      if (!['pixel', 'industrial', 'dots', 'stencil', 'stencil-condensed', 'stencil-wide', 'stencil-sign', 'stencil-slab', 'stencil-tenada', 'stencil-tenada-condensed', 'stencil-tenada-wide', 'stencil-sunfonts', 'stencil-butler', ...GOOGLE_STENCIL_FONTS.map(font => font.id)].includes(t.font as string)) throw new Error('Police invalide');
+      if (!['pixel', 'industrial', 'dots', 'stencil', 'stencil-condensed', 'stencil-wide', 'stencil-sign', 'stencil-slab', 'stencil-tenada', 'stencil-tenada-condensed', 'stencil-tenada-wide', 'stencil-sunfonts', 'stencil-butler', 'stencil-micro-block', 'stencil-micro-round', 'stencil-micro-tech', ...GOOGLE_STENCIL_FONTS.map(font => font.id)].includes(t.font as string)) throw new Error('Police invalide');
       result.cutText.font = t.font as import('./stencilText.ts').StencilFont;
     }
   }

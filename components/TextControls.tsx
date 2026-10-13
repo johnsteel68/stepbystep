@@ -11,7 +11,7 @@ export default function TextControls({ state, onChange, onDraftChange, placement
   const leg = state.legs.find(l => l.id === legId) ?? state.legs[0];
   // Start with the compact cutting design at its safe minimum, while keeping
   // saved projects (including their deliberately larger sizes) untouched.
-  const defaults = (): StencilText => leg.cutText ?? { text: '', font: 'stencil-sign', height: textMinimumHeight(state.thickness, 'stencil-sign'), x: leg.length / 2, y: state.width / 2, rotation: 0 };
+  const defaults = (): StencilText => leg.cutText ?? { text: 'TEXT', font: 'stencil-micro-block', height: textMinimumHeight(state.thickness, 'stencil-micro-block'), x: leg.length / 2, y: state.width / 2, rotation: 0 };
   const [draft, setDraft] = useState<StencilText>(defaults);
   const [sourceLeg, setSourceLeg] = useState<string | null>(leg.cutText ? leg.id : null);
   const [error, setError] = useState('');
@@ -37,7 +37,7 @@ export default function TextControls({ state, onChange, onDraftChange, placement
     if (!state.legs.slice(0, state.bendCount + 1).some(wing => wing.id === legId)) {
       setLegId('A');
       setSourceLeg(state.legs[0].cutText ? 'A' : null);
-      setDraft(state.legs[0].cutText ?? { text: '', font: 'stencil-sign', height: textMinimumHeight(state.thickness, 'stencil-sign'), x: state.legs[0].length / 2, y: state.width / 2, rotation: 0 });
+      setDraft(state.legs[0].cutText ?? { text: 'TEXT', font: 'stencil-micro-block', height: textMinimumHeight(state.thickness, 'stencil-micro-block'), x: state.legs[0].length / 2, y: state.width / 2, rotation: 0 });
     }
   }, [state, legId]);
   // The flat SVG previews drafts. Rebuild the expensive 3D cutouts only on
@@ -80,7 +80,7 @@ export default function TextControls({ state, onChange, onDraftChange, placement
     <p className="step-intro">Texte découpé à ponts intégrés. Facultatif.</p>
     <fieldset>
       <legend className="mb-2">Police du texte</legend>
-      <StencilFontPicker value={selectedFont.id} text={draft.text} onChange={font => update({ font, height: Math.max(draft.height, textMinimumHeight(state.thickness, font)) })} />
+      <StencilFontPicker value={selectedFont.id} text={draft.text} thickness={state.thickness} onChange={font => update({ font, height: Math.max(draft.height, textMinimumHeight(state.thickness, font)) })} />
       <p id="stencil-font-description" className="step-intro">{selectedFont.description}</p>
       {selectedFont.id === 'stencil-butler' && <a href="https://www.fabiandesmet.com" target="_blank" rel="noreferrer" className="step-intro underline">Butler par Fabian De Smet · site officiel</a>}
     </fieldset>
@@ -106,6 +106,8 @@ export default function TextControls({ state, onChange, onDraftChange, placement
     </svg>}
     <p className="step-intro">Cliquez sur la vue à plat pour placer le centre du bloc, ou faites glisser le texte. Les flèches du clavier déplacent le bloc de 1 mm.</p>
     <DimensionField id="text-height" label="Hauteur du texte" value={draft.height} min={textMinimumHeight(state.thickness, draft.font)} max={1000} onChange={height => update({ height })} />
+    <button type="button" className="btn-secondary" disabled={!draft.text.trim() || draft.height === textMinimumHeight(state.thickness, draft.font)}
+      onClick={() => update({ height: textMinimumHeight(state.thickness, draft.font) })}>Réduire à la taille minimale</button>
     <DimensionField id="text-x" label="Position X du centre" value={draft.x} min={0} max={leg.length} onChange={x => update({ x })} />
     <DimensionField id="text-y" label="Position Y du centre" value={draft.y} min={0} max={state.width} onChange={y => update({ y })} />
     <label>Orientation <select value={draft.rotation} onChange={event => update({ rotation: Number(event.target.value) as 0 | 90 })}><option value={0}>Horizontale</option><option value={90}>Verticale · 90°</option></select></label>
@@ -114,7 +116,7 @@ export default function TextControls({ state, onChange, onDraftChange, placement
       <button type="button" className="btn-secondary" disabled={!draft.text.trim()} onClick={() => update({ x: leg.length / 2, y: state.width / 2 })}>Centrer</button>
       <button type="button" className="btn-secondary" disabled={!draft.text.trim()} onClick={() => update({ rotation: draft.rotation === 0 ? 90 : 0 })}>Tourner de 90°</button>
     </div>
-    <p className="step-intro">Minimum {textMinimumHeight(state.thickness, draft.font)} mm de haut. Les ponts et les découpes sont adaptés à l’épaisseur. Règles prudentes, à confirmer par l’atelier.</p>
+    <p className="step-intro">Minimum {textMinimumHeight(state.thickness, draft.font)} mm de haut. Pour un petit texte, choisissez Micro Bloc, Micro Doux ou Micro Tech. Les ponts et découpes restent adaptés à l’épaisseur ; validation atelier nécessaire.</p>
     {(message || error) && <p className="step-intro" role="alert">{message || error}</p>}
     <button type="button" className="btn-primary" disabled={!candidate} onClick={() => { if (candidate) { onChange(candidate); setSourceLeg(legId); } }}>Valider le texte</button>
     {(leg.cutText || draft.text.trim()) && <button type="button" className="btn-secondary" onClick={() => {

@@ -3,6 +3,7 @@
  * Bridges are reinforced when deriving contours for the sheet-metal cutout.
  */
 export const GOOGLE_STENCIL_FONTS = [
+  { id: 'stencil-google-saira', label: 'Saira Stencil One', description: 'Stencil contemporain · angles nets et lettres ouvertes', directory: 'sairastencilone', weight: 400 },
   { id: 'stencil-google-days', label: 'Days One · stencil', description: 'Géométrique et arrondi · adaptation à ponts', directory: 'daysone', weight: 400 },
   { id: 'stencil-google-erica', label: 'Erica One · stencil', description: 'Affiche massive et ludique · adaptation à ponts', directory: 'ericaone', weight: 400 },
   { id: 'stencil-google-patua', label: 'Patua One · stencil', description: 'Empattements doux · adaptation à ponts', directory: 'patuaone', weight: 400 },

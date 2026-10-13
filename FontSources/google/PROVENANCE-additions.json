@@ -1,0 +1,14 @@
+{
+  "repository": "google/fonts",
+  "revision": "66928797f271fed5ee428544e7229685e2d90127",
+  "fonts": [
+    {
+      "id": "stencil-google-saira",
+      "filename": "SairaStencilOne-Regular.ttf",
+      "source": "https://github.com/google/fonts/tree/66928797f271fed5ee428544e7229685e2d90127/ofl/sairastencilone",
+      "sha256": "781496fdaf8e04cf6741b31025f6b4ba84f66021b097a8e0d85cbea2180cf223",
+      "license": "SIL OFL 1.1",
+      "adaptation": "Vector cutting contours with reinforced counter bridges; original font binary unmodified."
+    }
+  ]
+}

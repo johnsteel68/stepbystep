@@ -6,6 +6,7 @@ import { draw, getOC, importSTEP, isShape3D, makeBox, makeCylinder, measureVolum
 import { exportStepAp214 } from '../stepExport.ts';
 import { stencilCells, textMinimumHeight } from '../stencilText.ts';
 import { GOOGLE_STENCIL_FONTS } from '../googleStencilFonts.ts';
+import { COMPACT_STENCIL_FONTS } from '../compactStencil.ts';
 
 const require = createRequire(import.meta.url);
 before(async () => {
@@ -41,7 +42,7 @@ test('continuous stencil strokes export as valid cutouts rather than coincident 
   try {
     for (const cut of cuts) {
       const cutter = makeBox([cut.dist - cut.length! / 2, cut.offset - cut.width! / 2, -2], [cut.dist + cut.length! / 2, cut.offset + cut.width! / 2, 4]);
-      try { const next = solid.cut(cutter); solid.delete(); solid = next; } finally { cutter.delete(); }
+      try { const next = solid.cut(cutter); assert.ok(isShape3D(next)); solid.delete(); solid = next; } finally { cutter.delete(); }
     }
     const restored = await importSTEP(new Blob([exportStepAp214(solid)]));
     try { assert.ok(isShape3D(restored)); assert.ok(Math.abs(measureVolume(restored) - measureVolume(solid)) < .001); }
@@ -60,7 +61,7 @@ test('Tenada vector contours preserve their counters in a valid STEP solid', asy
       const cutter = path.close().sketchOnPlane('XY', -2).extrude(6);
       assert.ok(isShape3D(cutter));
       removedArea += Math.abs(points.reduce((area, p, i) => { const q = points[(i + 1) % points.length]; return area + p.x * q.y - q.x * p.y; }, 0)) / 2;
-      try { const next = solid.cut(cutter); solid.delete(); solid = next; } finally { cutter.delete(); }
+      try { const next = solid.cut(cutter); assert.ok(isShape3D(next)); solid.delete(); solid = next; } finally { cutter.delete(); }
     }
     const restored = await importSTEP(new Blob([exportStepAp214(solid)]));
     const analyzer = new (getOC().BRepCheck_Analyzer)(restored.wrapped, true, false, false);
@@ -68,6 +69,34 @@ test('Tenada vector contours preserve their counters in a valid STEP solid', asy
       assert.ok(isShape3D(restored));
       assert.equal(analyzer.IsValid(), true);
       assert.ok(Math.abs(measureVolume(restored) - (60000 - removedArea * 2)) < .001);
+    } finally { analyzer.delete(); restored.delete(); }
+  } finally { solid.delete(); }
+});
+
+for (const font of COMPACT_STENCIL_FONTS) test(`${font.label}: compact stencil remains one valid STEP solid at minimum height`, async () => {
+  const height = textMinimumHeight(2, font.id);
+  const cuts = stencilCells({ text: 'B8', font: font.id, height, x: 50, y: 30, rotation: 0 }, 2);
+  let solid = makeBox([0, 0, 0], [100, 60, 2]);
+  try {
+    for (const cut of cuts) {
+      const points = cut.contour ?? [
+        { x: -cut.length! / 2, y: -cut.width! / 2 }, { x: cut.length! / 2, y: -cut.width! / 2 },
+        { x: cut.length! / 2, y: cut.width! / 2 }, { x: -cut.length! / 2, y: cut.width! / 2 },
+      ];
+      let path = draw([cut.dist + points[0].x, cut.offset + points[0].y]);
+      for (const point of points.slice(1)) path = path.lineTo([cut.dist + point.x, cut.offset + point.y]);
+      const cutter = path.close().sketchOnPlane('XY', -2).extrude(6);
+      assert.ok(isShape3D(cutter));
+      try { const next = solid.cut(cutter); assert.ok(isShape3D(next)); solid.delete(); solid = next; } finally { cutter.delete(); }
+    }
+    assert.equal(solid.solids.length, 1, 'Every counter must stay attached to the sheet');
+    const restored = await importSTEP(new Blob([exportStepAp214(solid)]));
+    const analyzer = new (getOC().BRepCheck_Analyzer)(restored.wrapped, true, false, false);
+    try {
+      assert.ok(isShape3D(restored));
+      assert.equal(analyzer.IsValid(), true);
+      assert.ok(Math.abs(measureVolume(restored) - measureVolume(solid)) < .001);
+      assert.ok(measureVolume(restored) < 12000);
     } finally { analyzer.delete(); restored.delete(); }
   } finally { solid.delete(); }
 });
@@ -86,7 +115,7 @@ for (const font of GOOGLE_STENCIL_FONTS) test(`${font.label}: vector stencil exp
       const cutter = path.close().sketchOnPlane('XY', -2).extrude(6);
       assert.ok(isShape3D(cutter));
       removedArea += Math.abs(points.reduce((area, p, i) => { const q = points[(i + 1) % points.length]; return area + p.x * q.y - q.x * p.y; }, 0)) / 2;
-      try { const next = solid.cut(cutter); solid.delete(); solid = next; } finally { cutter.delete(); }
+      try { const next = solid.cut(cutter); assert.ok(isShape3D(next)); solid.delete(); solid = next; } finally { cutter.delete(); }
     }
     assert.equal(solid.solids.length, 1, 'Stencil counters must remain attached to the sheet');
     const restored = await importSTEP(new Blob([exportStepAp214(solid)]));

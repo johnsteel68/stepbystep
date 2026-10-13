@@ -35,7 +35,7 @@ function FontPreview({ font, text }: { font: StencilFont; text: string }) {
   </svg>;
 }
 
-export default function StencilFontPicker({ value, onChange, text = '' }: { value: StencilFont; text?: string; onChange: (font: StencilFont) => void }) {
+export default function StencilFontPicker({ value, onChange, text = '', thickness = 2 }: { value: StencilFont; text?: string; thickness?: number; onChange: (font: StencilFont) => void }) {
   const selected = STENCIL_FONTS.find(font => font.id === value)!;
   // Old shared projects retain their font, without advertising stretched variants.
   const allFonts = useMemo(() => SELECTABLE_STENCIL_FONTS.some(font => font.id === value)
@@ -100,7 +100,9 @@ export default function StencilFontPicker({ value, onChange, text = '' }: { valu
       <div role="listbox" aria-label="Polices stencil" tabIndex={0} aria-activedescendant={fonts.length ? `${id}-${active}` : undefined}>
       {fonts.map((font, index) => <div key={font.id} id={`${id}-${index}`} role="option" aria-selected={font.id === value}
         className={`stencil-picker-option${active === index ? ' is-focused' : ''}`} onPointerMove={event => { if (event.pointerType === 'mouse') setActive(index); }} onClick={() => choose(index)}>
-        <span className="stencil-picker-name">{font.label}{font.id === value && <span aria-hidden="true"> ✓</span>}</span>
+        <span className="stencil-picker-name">{font.label}{font.id === value && <span aria-hidden="true"> ✓</span>}
+          <small className="stencil-picker-minimum">Hauteur mini : {textMinimumHeight(thickness, font.id).toLocaleString('fr-FR', { maximumFractionDigits: 1 })} mm</small>
+        </span>
         <FontPreview font={font.id} text={text} />
       </div>)}
       </div>
