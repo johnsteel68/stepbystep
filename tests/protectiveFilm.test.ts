@@ -117,7 +117,7 @@ test('film shader keeps the base metal, replaces only the covered finish and has
 
 test('dragging reuses the flap buffer and returns to the same dog-eared shape', () => {
   const peel = peelFor(filmed())!;
-  assert.ok(peel.maxSize! > peel.size && peel.maxSize! <= 300 * .85);
+  assert.ok(peel.maxSize! > 300 * 1.8 && peel.maxSize! <= 300 * 1.9);
   const geometry = createFilmPeelGeometry(peel);
   try {
     const buffer = geometry.getAttribute('position');

@@ -648,3 +648,20 @@ button[data-tooltip]:focus-visible::after { opacity: 1; }
   color: #17202c;
   background: white;
 }
+.film-grab-handle:not(:focus-visible) {
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
+  clip-path: none;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  font-size: 0;
+  cursor: grab;
+  touch-action: none;
+}
+.film-grab-handle:hover:not(:focus-visible) {
+  background: rgba(72, 155, 229, .12);
+  outline: 1px solid rgba(72, 155, 229, .6);
+}
+.film-grab-handle:active { cursor: grabbing; }

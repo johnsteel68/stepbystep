@@ -29,3 +29,11 @@ test('presentation follows workflow sections and exports have no film layer', ()
   assert.match(viewer, /filmStage = 'hidden'/);
   assert.match(viewer, /!exportOnly && FINISH_TEXTURE_PROFILES\[finish\].protectiveFilm/);
 });
+
+test('corner restores pointer picking after hiding and provides a screen-sized drag target', () => {
+  const corner = readFileSync(new URL('../viewer/materials/ProtectiveFilmCorner.tsx', import.meta.url), 'utf8');
+  assert.match(corner, /raycast=\{interactive \? Mesh.prototype.raycast/);
+  assert.match(corner, /beginDrag\(event.nativeEvent\)/);
+  assert.match(corner, /Math.hypot\(next.clientX - startX, next.clientY - startY\)/);
+  assert.match(corner, /film-grab-handle/);
+});

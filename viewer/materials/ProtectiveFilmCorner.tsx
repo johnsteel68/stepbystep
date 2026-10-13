@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, type RefObject } from 'react';
-import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
-import { DoubleSide, Vector3, type Mesh, type MeshPhysicalMaterial } from 'three';
+import { DoubleSide, Vector3, Mesh, type MeshPhysicalMaterial } from 'three';
 import { createFilmPeelGeometry, setProtectiveFilmSize, type FilmPeel } from './protectiveFilm';
 
 /** Cosmetic interaction only. Dragging changes uniforms and a reusable vertex
@@ -43,13 +43,14 @@ export default function ProtectiveFilmCorner({ peel, material, interactive = tru
     invalidate();
   });
 
-  const beginDrag = (event: ThreeEvent<PointerEvent>) => {
+  const beginDrag = (event: Pick<PointerEvent, 'button' | 'pointerId' | 'clientX' | 'clientY' | 'stopPropagation'>) => {
     if (!interactive || event.button !== 0 || release.current) return;
+    if (!flap.current) return;
     event.stopPropagation();
     const canvas = gl.domElement;
     const rect = canvas.getBoundingClientRect();
-    const origin = event.object.localToWorld(peel.origin.clone()).project(camera);
-    const end = event.object.localToWorld(peel.origin.clone().addScaledVector(
+    const origin = flap.current.localToWorld(peel.origin.clone()).project(camera);
+    const end = flap.current.localToWorld(peel.origin.clone().addScaledVector(
       new Vector3().addVectors(peel.along, peel.across).normalize(), peel.size,
     )).project(camera);
     const dx = (end.x - origin.x) * rect.width / 2;
@@ -64,7 +65,9 @@ export default function ProtectiveFilmCorner({ peel, material, interactive = tru
     const startX = event.clientX, startY = event.clientY, startSize = motion.current.current;
     const move = (next: PointerEvent) => {
       if (next.pointerId !== event.pointerId) return;
-      const distance = ((next.clientX - startX) * dx + (next.clientY - startY) * dy) / length;
+      // A user can pull towards or away from the plate, not just along a
+      // single projected diagonal. Returning towards the grab point retracts it.
+      const distance = Math.hypot(next.clientX - startX, next.clientY - startY);
       motion.current.target = Math.max(peel.size, Math.min(peel.maxSize ?? peel.size, startSize + distance * peel.size / length));
       invalidate();
     };
@@ -93,7 +96,9 @@ export default function ProtectiveFilmCorner({ peel, material, interactive = tru
 
   return <>
     <mesh ref={flap} geometry={geometry}
-      raycast={interactive ? undefined : () => {}}
+      // R3F does not restore a method when a previous prop becomes undefined.
+      // Explicitly restore Mesh.raycast after hidden -> selection transitions.
+      raycast={interactive ? Mesh.prototype.raycast : () => {}}
       onPointerDown={beginDrag}
       onPointerOver={() => { if (interactive && !release.current) gl.domElement.style.cursor = 'grab'; }}
       onPointerOut={() => { if (!release.current) gl.domElement.style.cursor = ''; }}>
@@ -101,7 +106,9 @@ export default function ProtectiveFilmCorner({ peel, material, interactive = tru
         transparent opacity={.48} depthWrite={false} side={DoubleSide} />
     </mesh>
     {interactive && <Html position={peel.origin} zIndexRange={[10, 0]}>
-      <button ref={keyboardControl} data-peel-size={peel.size.toFixed(2)} type="button" className="film-keyboard-control" aria-label="Décoller le film : maintenir Espace ou Entrée"
+      <button ref={keyboardControl} data-peel-size={peel.size.toFixed(2)} type="button" className="film-keyboard-control film-grab-handle" aria-label="Décoller le film : maintenir Espace ou Entrée"
+        title="Saisissez le coin et tirez pour découvrir le métal"
+        onPointerDown={event => { event.preventDefault(); event.stopPropagation(); beginDrag(event.nativeEvent); }}
         onKeyDown={event => {
           if (event.key !== ' ' && event.key !== 'Enter') return;
           event.preventDefault();
