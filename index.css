@@ -612,3 +612,16 @@ button[data-tooltip]:focus-visible::after { opacity: 1; }
 .stencil-picker-option svg { flex-shrink: 0; color: #ee497b; }
 .stencil-picker-option.is-focused { background: #283342; border-color: #697889; }
 .stencil-picker-option[aria-selected="true"] { color: #ff83a5; }
+
+/* Hit areas stay active around the corners. Touch devices expose the control
+   permanently; mouse users see it on approach, without covering the text. */
+.text-rotation-handle { cursor: url('/icons/text-rotate-cursor.svg') 16 16, crosshair; outline: none; }
+.text-rotation-handle:active { cursor: url('/icons/text-rotate-cursor.svg') 16 16, crosshair; }
+.text-rotation-icon { opacity: 0; transition: opacity 120ms ease; }
+.text-corner-controls:hover .text-rotation-icon,
+.text-rotation-handle:focus-visible .text-rotation-icon,
+.text-rotation-handle:active .text-rotation-icon { opacity: 1; }
+.text-rotation-handle:focus-visible .text-rotation-icon circle { stroke-width: 3; }
+.text-rotation-value { min-width: 48px; align-self: center; text-align: center; font-variant-numeric: tabular-nums; }
+@media (hover: none) { .text-rotation-icon { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .text-rotation-icon { transition: none; } }

@@ -101,6 +101,33 @@ for (const font of COMPACT_STENCIL_FONTS) test(`${font.label}: compact stencil r
   } finally { solid.delete(); }
 });
 
+test('full-turn text rotation exports the same real cut volume at every 45 degree step and a free angle', async () => {
+  let expectedVolume: number | undefined;
+  for (const rotation of [0, 45, 90, 135, 180, 225, 270, 315, 37]) {
+    const cuts = stencilCells({ text: 'R1', font: 'stencil-micro-tech', height: 16, x: 50, y: 50, rotation }, 2);
+    let solid = makeBox([0, 0, 0], [100, 100, 2]);
+    try {
+      for (const cut of cuts) {
+        const points = cut.contour!;
+        let path = draw([cut.dist + points[0].x, cut.offset + points[0].y]);
+        for (const point of points.slice(1)) path = path.lineTo([cut.dist + point.x, cut.offset + point.y]);
+        const cutter = path.close().sketchOnPlane('XY', -2).extrude(6);
+        assert.ok(isShape3D(cutter));
+        try { const next = solid.cut(cutter); assert.ok(isShape3D(next)); solid.delete(); solid = next; }
+        finally { cutter.delete(); }
+      }
+      assert.equal(solid.solids.length, 1, `Rotation ${rotation}: counters stay attached`);
+      const restored = await importSTEP(new Blob([exportStepAp214(solid)]));
+      try {
+        assert.ok(isShape3D(restored));
+        const volume = measureVolume(restored);
+        expectedVolume ??= volume;
+        assert.ok(Math.abs(volume - expectedVolume) < .001, `Rotation ${rotation}: no enlarged or mirrored bounding-box cuts`);
+      } finally { restored.delete(); }
+    } finally { solid.delete(); }
+  }
+});
+
 for (const font of GOOGLE_STENCIL_FONTS) test(`${font.label}: vector stencil exports a valid STEP with connected material`, async () => {
   const height = textMinimumHeight(2, font.id);
   const cuts = stencilCells({ text: 'B8', font: font.id, height, x: 350, y: 200, rotation: 0 }, 2);

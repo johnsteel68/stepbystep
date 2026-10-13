@@ -8,6 +8,7 @@ import { BUTLER_GLYPHS } from './butlerGlyphs.ts';
 import { GOOGLE_STENCIL_FONTS } from './googleStencilFonts.ts';
 import { GOOGLE_STENCIL_DATA } from './googleStencilGlyphs.ts';
 import { getGoogleStencilGlyphs } from './googleStencilLoader.ts';
+import { normalizeTextRotation, rotateTextPoint, rotateStencilCuts } from './textRotation.ts';
 import { COMPACT_STENCIL_FONTS, compactMinimumHeight, isCompactStencil, styleCompactCuts } from './compactStencil.ts';
 
 export const STENCIL_FONTS = [
@@ -30,7 +31,7 @@ export const STENCIL_FONTS = [
 export type StencilFont = typeof STENCIL_FONTS[number]['id'];
 // Keep old IDs readable for shared projects, without offering stretched clones.
 export const SELECTABLE_STENCIL_FONTS = STENCIL_FONTS.filter(font => font.id.startsWith('stencil') && !['stencil-condensed', 'stencil-wide', 'stencil-tenada-condensed', 'stencil-tenada-wide'].includes(font.id));
-export interface StencilText { text: string; height: number; x: number; y: number; rotation: 0 | 90; font?: StencilFont }
+export interface StencilText { text: string; height: number; x: number; y: number; rotation: number; font?: StencilFont }
 export const textSafetyMargin = (thickness: number) => Math.max(3, thickness);
 /** A text edit is transactional: only return configurations accepted by the
  * same validator used for committing and exporting the cutouts. */
@@ -142,9 +143,10 @@ export function textMinimumHeight(thickness: number, font: StencilFont = 'pixel'
 function continuousStencil(config: StencilText, thickness: number): HolePosition[] {
   const text = config.text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
   if (!text.trim() || text.length > 16 || [...text].some(c => !industrialAlphabet[c])) throw new Error('Utilisez 1 à 16 caractères : A–Z, chiffres, espace, point ou tiret.');
-  if (![config.height, config.x, config.y].every(Number.isFinite) || ![0, 90].includes(config.rotation)) throw new Error('Réglage de texte invalide.');
+  if (![config.height, config.x, config.y].every(Number.isFinite) || !Number.isFinite(config.rotation)) throw new Error('Réglage de texte invalide.');
   const minimum = textMinimumHeight(thickness, config.font);
   if (config.height < minimum) throw new Error(`Hauteur minimale : ${minimum} mm pour cette police et cette épaisseur.`);
+  const quarterTurn = normalizeTextRotation(config.rotation) === 90;
   const micro = isCompactStencil(config.font);
   const compact = micro || config.font === 'stencil-sign';
   const rowCount = compact ? 5 : 7, columnCount = compact ? 3 : 5;
@@ -181,9 +183,9 @@ function continuousStencil(config: StencilText, thickness: number): HolePosition
         for (const [low, high] of intervals) {
           if (high - low < 1e-8) continue;
           const dx = left + width / 2, dy = (low + high) / 2;
-          cuts.push({ dist: config.x + (config.rotation === 90 ? -dy : dx), offset: config.y + (config.rotation === 90 ? dx : dy),
-            shape: 'rect', length: config.rotation === 90 ? high - low : width,
-            width: config.rotation === 90 ? width : high - low, cornerRadius: 0, textCutout: true });
+          cuts.push({ dist: config.x + (quarterTurn ? -dy : dx), offset: config.y + (quarterTurn ? dx : dy),
+            shape: 'rect', length: quarterTurn ? high - low : width,
+            width: quarterTurn ? width : high - low, cornerRadius: 0, textCutout: true });
         }
       }
     }
@@ -192,7 +194,7 @@ function continuousStencil(config: StencilText, thickness: number): HolePosition
   // should be one cut, not coincident faces or visible raster seams.
   const merged: HolePosition[] = [];
   for (const cut of cuts) {
-    const vertical = config.rotation === 0;
+    const vertical = !quarterTurn;
     const previous = merged.find(other => vertical
       ? Math.abs(other.dist - cut.dist) < 1e-8 && Math.abs(other.length! - cut.length!) < 1e-8
         && Math.abs(other.offset + other.width! / 2 - (cut.offset - cut.width! / 2)) < 1e-8
@@ -207,7 +209,8 @@ function continuousStencil(config: StencilText, thickness: number): HolePosition
       previous.dist = (low + high) / 2; previous.length = high - low;
     }
   }
-  return micro ? styleCompactCuts(merged, config.font!, thickness) : merged;
+  const styled = micro ? styleCompactCuts(merged, config.font!, thickness) : merged;
+  return rotateStencilCuts(styled, config.rotation - (quarterTurn ? 90 : 0), config.x, config.y);
 }
 export function stencilCells(config: StencilText, thickness: number): HolePosition[] {
   if (config.font && !STENCIL_FONTS.some(item => item.id === config.font)) throw new Error('Police stencil inconnue.');
@@ -215,7 +218,7 @@ export function stencilCells(config: StencilText, thickness: number): HolePositi
     const glyphs = getGoogleStencilGlyphs(config.font!) ?? (config.font === 'stencil-sunfonts' ? SUNFONTS_GLYPHS : config.font === 'stencil-butler' ? BUTLER_GLYPHS : TENADA_GLYPHS);
     const text = config.text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
     if (!text.trim() || text.length > 16 || [...text].some(c => !glyphs[c])) throw new Error('Utilisez 1 à 16 caractères : A–Z, chiffres, espace, point ou tiret.');
-    if (![config.height, config.x, config.y].every(Number.isFinite) || ![0, 90].includes(config.rotation)) throw new Error('Réglage de texte invalide.');
+    if (![config.height, config.x, config.y].every(Number.isFinite) || !Number.isFinite(config.rotation)) throw new Error('Réglage de texte invalide.');
     if (config.height < textMinimumHeight(thickness, config.font)) throw new Error(`Hauteur minimale : ${textMinimumHeight(thickness, config.font)} mm pour cette police et cette épaisseur.`);
     const aspect = config.font.endsWith('condensed') ? .8 : config.font.endsWith('wide') ? 1.2 : 1;
     let cursor = 0;
@@ -229,7 +232,7 @@ export function stencilCells(config: StencilText, thickness: number): HolePositi
     const top = Math.min(...all.map(p => p.y)), bottom = Math.max(...all.map(p => p.y));
     return paths.map(ps => {
       const points = ps.map(p => { const x = p.x - (left + right) / 2, y = p.y - (top + bottom) / 2;
-        return config.rotation === 90 ? { x: -y, y: x } : { x, y }; });
+        return rotateTextPoint(x, y, config.rotation); });
       const lo = Math.min(...points.map(p => p.x)), hi = Math.max(...points.map(p => p.x));
       const min = Math.min(...points.map(p => p.y)), max = Math.max(...points.map(p => p.y));
       return { dist: config.x + (lo + hi) / 2, offset: config.y + (min + max) / 2, shape: 'rect', length: hi - lo, width: max - min, textCutout: true,
@@ -243,19 +246,21 @@ export function stencilCells(config: StencilText, thickness: number): HolePositi
   const glyphs = font === 'pixel' ? alphabet : industrialAlphabet;
   const rows = font === 'pixel' ? 5 : 7, columns = font === 'pixel' ? 3 : 5;
   if (!text.trim() || text.length > 16 || [...text].some(c => !alphabet[c])) throw new Error('Utilisez 1 à 16 caractères : A–Z, chiffres, espace, point ou tiret.');
-  if (![config.height, config.x, config.y].every(Number.isFinite) || ![0,90].includes(config.rotation)) throw new Error('Réglage de texte invalide.');
+  if (![config.height, config.x, config.y].every(Number.isFinite) || !Number.isFinite(config.rotation)) throw new Error('Réglage de texte invalide.');
   if (config.height < textMinimumHeight(thickness, font)) throw new Error(`Hauteur minimale : ${textMinimumHeight(thickness, font)} mm pour cette police et cette épaisseur.`);
   const bridge = Math.max(2, thickness);
   const cell = (config.height - (rows - 1) * bridge) / rows;
   const pitch = cell + bridge;
   const totalWidth = (text.length * (columns + 1) - 1) * pitch - bridge;
-  return [...text].flatMap((character, index) => glyphs[character].split('/').flatMap((row, y) => [...row].flatMap((bit, x) => {
+  const quarterTurn = normalizeTextRotation(config.rotation) === 90;
+  const cuts = [...text].flatMap((character, index) => glyphs[character].split('/').flatMap((row, y) => [...row].flatMap((bit, x) => {
     if (bit !== '1') return [];
     const dx = (index * (columns + 1) + x) * pitch + cell / 2 - totalWidth / 2;
     const dy = y * pitch + cell / 2 - config.height / 2;
-    return [{ dist: config.x + (config.rotation === 90 ? -dy : dx), offset: config.y + (config.rotation === 90 ? dx : dy),
+    return [{ dist: config.x + (quarterTurn ? -dy : dx), offset: config.y + (quarterTurn ? dx : dy),
       shape: font === 'dots' ? 'round' as const : 'square' as const, diam: cell, cornerRadius: 0, textCutout: true }];
   })));
+  return rotateStencilCuts(cuts, config.rotation - (quarterTurn ? 90 : 0), config.x, config.y);
 }
 
 /** Recheck after thickness/dimension edits; never silently move or resize text. */

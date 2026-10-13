@@ -4,9 +4,10 @@ import type { SheetMetalState } from '../sheetGeometry';
 import { DimensionField } from './DimensionControls';
 import TextCutout from './TextCutout';
 import StencilFontPicker from './StencilFontPicker';
+import { normalizeTextRotation } from '../textRotation';
 
 export default function TextControls({ state, onChange, onDraftChange, placement }: { state: SheetMetalState; onChange: (next: SheetMetalState) => void;
-  onDraftChange: (value: { legId: string; config: StencilText }) => void; placement: { legId: string; x: number; y: number; height?: number; rotation?: 0 | 90 } | null }) {
+  onDraftChange: (value: { legId: string; config: StencilText }) => void; placement: { legId: string; x: number; y: number; height?: number; rotation?: number } | null }) {
   const [legId, setLegId] = useState('A');
   const leg = state.legs.find(l => l.id === legId) ?? state.legs[0];
   // Start with the compact cutting design at its safe minimum, while keeping
@@ -59,7 +60,7 @@ export default function TextControls({ state, onChange, onDraftChange, placement
       const proposed = { ...draft, ...patch };
       // Numeric positioning is exact; size/font/content edits may fit the
       // whole block, but a rejected edit never becomes a visible draft.
-      if ('x' in patch || 'y' in patch) {
+      if ('x' in patch || 'y' in patch || 'rotation' in patch) {
         if (proposed.text.trim()) applyStencilText(state, legId, proposed);
         setDraft(proposed);
       } else setDraft(fitStencilText(state, legId, proposed));
@@ -110,11 +111,13 @@ export default function TextControls({ state, onChange, onDraftChange, placement
       onClick={() => update({ height: textMinimumHeight(state.thickness, draft.font) })}>Réduire à la taille minimale</button>
     <DimensionField id="text-x" label="Position X du centre" value={draft.x} min={0} max={leg.length} onChange={x => update({ x })} />
     <DimensionField id="text-y" label="Position Y du centre" value={draft.y} min={0} max={state.width} onChange={y => update({ y })} />
-    <label>Orientation <select value={draft.rotation} onChange={event => update({ rotation: Number(event.target.value) as 0 | 90 })}><option value={0}>Horizontale</option><option value={90}>Verticale · 90°</option></select></label>
-    <p className="step-intro">Deux orientations uniquement : horizontale ou verticale. Chaque rotation conserve les marges et évite les plis.</p>
+    <DimensionField id="text-rotation" label="Rotation du texte (°)" value={normalizeTextRotation(draft.rotation)} min={0} max={360}
+      onChange={rotation => update({ rotation: normalizeTextRotation(rotation) })} />
+    <p className="step-intro">Tour complet : 0°, 45°, 90°… 315°. La poignée près d’un coin tourne librement ; Maj accroche les angles à 45°. Le centre reste fixe.</p>
     <div className="flex gap-2">
       <button type="button" className="btn-secondary" disabled={!draft.text.trim()} onClick={() => update({ x: leg.length / 2, y: state.width / 2 })}>Centrer</button>
-      <button type="button" className="btn-secondary" disabled={!draft.text.trim()} onClick={() => update({ rotation: draft.rotation === 0 ? 90 : 0 })}>Tourner de 90°</button>
+      <button type="button" className="btn-secondary" disabled={!draft.text.trim()} onClick={() => update({ rotation: normalizeTextRotation(draft.rotation - 45) })}>↶ −45°</button>
+      <button type="button" className="btn-secondary" disabled={!draft.text.trim()} onClick={() => update({ rotation: normalizeTextRotation(draft.rotation + 45) })}>↻ +45°</button>
     </div>
     <p className="step-intro">Minimum {textMinimumHeight(state.thickness, draft.font)} mm de haut. Pour un petit texte, choisissez Micro Bloc, Micro Doux ou Micro Tech. Les ponts et découpes restent adaptés à l’épaisseur ; validation atelier nécessaire.</p>
     {(message || error) && <p className="step-intro" role="alert">{message || error}</p>}
