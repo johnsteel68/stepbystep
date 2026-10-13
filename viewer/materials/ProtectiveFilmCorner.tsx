@@ -89,7 +89,8 @@ export default function ProtectiveFilmCorner({ peel, material, interactive = tru
       onPointerDown={beginDrag}
       onPointerOver={() => { if (interactive && !release.current) gl.domElement.style.cursor = 'grab'; }}
       onPointerOut={() => { if (!release.current) gl.domElement.style.cursor = ''; }}>
-      <meshPhysicalMaterial color="#e8e8e8" metalness={0} roughness={.48} clearcoat={.06} clearcoatRoughness={.65} side={DoubleSide} />
+      <meshPhysicalMaterial color="#489be5" metalness={0} roughness={.2} clearcoat={.8} clearcoatRoughness={.2}
+        transparent opacity={.48} depthWrite={false} side={DoubleSide} />
     </mesh>
     {interactive && <Html position={peel.origin} zIndexRange={[10, 0]}>
       <button ref={keyboardControl} data-peel-size={peel.size.toFixed(2)} type="button" className="film-keyboard-control" aria-label="Décoller le film : maintenir Espace ou Entrée"

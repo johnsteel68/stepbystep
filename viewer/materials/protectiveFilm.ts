@@ -129,19 +129,23 @@ export function applyProtectiveFilm(material: MeshPhysicalMaterial, peel?: FilmP
       float filmU = dot(filmLocal, filmAlong), filmV = dot(filmLocal, filmAcross);
       float filmCover = 1.0;
       if (filmSize > 0.0 && filmU >= -0.01 && filmV >= -0.01 && filmU + filmV < filmSize) filmCover = 0.0;
-      vec2 bubbleUv = mod(vFilmUv, 230.0);
-      float filmHeight = filmCover * (0.22 * filmBubble(bubbleUv, vec2(25.0,40.0), 4.0)
-        + 0.15 * filmBubble(bubbleUv, vec2(170.0,130.0), 3.0)
-        + 0.09 * filmBubble(bubbleUv, vec2(90.0,195.0), 2.0));
-      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.91), filmCover);
+      vec2 bubbleUv = mod(vFilmUv, 87.0);
+      float filmAir = filmBubble(bubbleUv, vec2(21.0,32.0), 5.5)
+        + 0.62 * filmBubble(bubbleUv, vec2(66.0,58.0), 3.5)
+        + 0.3 * filmBubble(bubbleUv, vec2(47.0,14.0), 2.0);
+      float filmHeight = filmCover * 0.72 * filmAir;
+      // The plate stays opaque; transparency belongs to the protective layer.
+      // Retain the underlying metal map instead of replacing it with blue paint.
+      vec3 filmTintedMetal = mix(diffuseColor.rgb, vec3(0.035,0.28,0.68), 0.3);
+      diffuseColor.rgb = mix(diffuseColor.rgb, filmTintedMetal, filmCover);
     `);
-    shader.fragmentShader = shader.fragmentShader.replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = mix(roughnessFactor, 0.48, filmCover);');
-    shader.fragmentShader = shader.fragmentShader.replace('#include <metalnessmap_fragment>', '#include <metalnessmap_fragment>\nmetalnessFactor = mix(metalnessFactor, 0.0, filmCover);');
+    shader.fragmentShader = shader.fragmentShader.replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = mix(roughnessFactor, 0.24, filmCover * 0.7);');
+    shader.fragmentShader = shader.fragmentShader.replace('#include <metalnessmap_fragment>', '#include <metalnessmap_fragment>\nmetalnessFactor = mix(metalnessFactor, 0.0, filmCover * 0.55);');
     // Screen derivatives perturb lighting without displacing the physical mesh.
     shader.fragmentShader = shader.fragmentShader.replace('#include <normal_fragment_maps>', `vec3 filmBaseNormal = normal;
       #include <normal_fragment_maps>
       // Preserve the actual metal relief where the film is peeled away.
-      normal = normalize(mix(normal, filmBaseNormal, filmCover));
+      normal = normalize(mix(normal, filmBaseNormal, filmCover * 0.6));
       vec3 filmDx = dFdx(-vViewPosition), filmDy = dFdy(-vViewPosition);
       vec3 filmR1 = cross(filmDy, normal), filmR2 = cross(normal, filmDx);
       float filmDet = dot(filmDx, filmR1);
@@ -149,5 +153,5 @@ export function applyProtectiveFilm(material: MeshPhysicalMaterial, peel?: FilmP
       if (abs(filmDet) > 0.00000001) normal = normalize(abs(filmDet) * normal - filmGradient);
     `);
   };
-  material.customProgramCacheKey = () => 'protective-film-v2';
+  material.customProgramCacheKey = () => 'protective-film-blue-v3';
 }

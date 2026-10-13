@@ -100,12 +100,13 @@ test('film shader keeps the base metal, replaces only the covered finish and has
     assert.equal(shader.uniforms.filmSize.value, peel.size);
     assert.match(shader.vertexShader, /vFilmPosition = position/);
     assert.match(shader.fragmentShader, /filmU \+ filmV < filmSize/);
-    assert.match(shader.fragmentShader, /metalnessFactor = mix\(metalnessFactor, 0.0, filmCover\)/);
+    assert.match(shader.fragmentShader, /metalnessFactor = mix\(metalnessFactor, 0.0, filmCover \* 0.55\)/);
     assert.match(shader.fragmentShader, /filmBubble/);
     assert.match(shader.fragmentShader, /abs\(filmDet\) > /);
-    assert.equal(material.customProgramCacheKey(), 'protective-film-v2');
-    assert.match(shader.fragmentShader, /vec3\(0\.91\)/);
-    assert.match(shader.fragmentShader, /mix\(normal, filmBaseNormal, filmCover\)/);
+    assert.equal(material.customProgramCacheKey(), 'protective-film-blue-v3');
+    assert.match(shader.fragmentShader, /mix\(diffuseColor.rgb, vec3\(0.035,0.28,0.68\), 0.3\)/);
+    assert.match(shader.fragmentShader, /filmCover \* 0.72 \* filmAir/);
+    assert.match(shader.fragmentShader, /mix\(normal, filmBaseNormal, filmCover \* 0.6\)/);
     assert.ok(shader.fragmentShader.includes('#include <map_fragment>'));
   } finally { material.dispose(); }
 });
