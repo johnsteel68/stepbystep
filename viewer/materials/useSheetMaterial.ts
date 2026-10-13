@@ -106,10 +106,11 @@ export function useImportedPbrMaterial(finish: SheetFinish, realistic: boolean, 
     }
 
     if (profile.protectiveFilm) {
-      textured.normalMap = null;
-      textured.bumpMap = null;
-      textured.clearcoat = .06;
-      textured.clearcoatRoughness = .65;
+      // Retain metal relief under the peeled corner; the film shader masks
+      // these normals only on the covered area.
+      // The revealed area uses the finish's own roughness, not the plastic
+      // preset. Only filmCover in the shader supplies the satin film response.
+      textured.roughness = profile.roughness;
       applyProtectiveFilm(textured, filmPeel);
     }
 

@@ -591,6 +591,7 @@ interface SheetMetalGroupProps extends ViewerProps {
   showDimensions?: boolean;
   showDimensionInfo?: boolean;
   exportOnly?: boolean;
+  filmInteractive?: boolean;
   exportGrainDirection?: 'length' | 'width';
 }
 
@@ -860,6 +861,7 @@ export const SheetMetalGroup = React.memo(function SheetMetalGroup({
   showDimensions = true,
   showDimensionInfo = false,
   exportOnly = false,
+  filmInteractive = true,
   exportGrainDirection,
   grainDirection = 'length',
 }: SheetMetalGroupProps) {
@@ -1055,7 +1057,8 @@ export const SheetMetalGroup = React.memo(function SheetMetalGroup({
           leg.tip.y + leg.direction.y * dist + side * leg.normal.y * dimensions.thickness / 2, offset],
       }));
     }) }}>
-      {usePbrMaterial && filmPeel && <ProtectiveFilmCorner peel={filmPeel} />}
+      {usePbrMaterial && filmPeel && <ProtectiveFilmCorner peel={filmPeel} interactive={filmInteractive && !placementMode}
+        material={Array.isArray(sheetMaterials.material) ? sheetMaterials.material[1] : sheetMaterials.material} />}
       {showActiveBendCue && (
         <ActiveBendCue
           dimensions={dimensions}
@@ -1730,6 +1733,7 @@ export default function Viewer({
             showActiveLegCue={showActiveLegCue}
             realistic={realistic}
             placementMode={placementMode}
+            filmInteractive={!measureEnabled && !placementSceneActive && !cornerSceneActive && !textFlatView}
             placementTargetLegId={placementTargetLegId}
             placementDraft={placementDraft}
             onHolePlacement={onHolePlacement}

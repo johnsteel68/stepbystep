@@ -630,3 +630,21 @@ button[data-tooltip]:focus-visible::after { opacity: 1; }
 .text-rotation-value { min-width: 48px; align-self: center; text-align: center; font-variant-numeric: tabular-nums; }
 @media (hover: none) { .text-rotation-icon { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .text-rotation-icon { transition: none; } }
+.film-keyboard-control {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.film-keyboard-control:focus-visible {
+  width: max-content;
+  height: auto;
+  padding: 8px 12px;
+  clip-path: none;
+  border: 2px solid #e83c69;
+  border-radius: 6px;
+  color: #17202c;
+  background: white;
+}

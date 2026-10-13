@@ -178,20 +178,21 @@ export const FINISH_TEXTURE_PROFILES: Record<SheetFinish, FinishTextureProfile> 
   'steel-larme': { set: 'textureCanTread', roughness: 0.62, metalness: 0.88, bumpScale: 1.5, normalScale: 1, clearcoat: 0.1, smoothTint: '#8d929a', oneSidedRelief: true },
   'steel-corten': { set: 'corten', roughness: 0.82, metalness: 0.28, bumpScale: 0.12, normalScale: 0.24, clearcoat: 0.015 },
   'aluminum-raw': { set: 'blendAluminumRaw', roughness: 0.62, metalness: 0.78, bumpScale: 0, normalScale: 0.22, clearcoat: 0.08 },
-  'aluminum-filmed': { set: 'aluminum', roughness: 0.34, metalness: 1, bumpScale: 0, normalScale: 0, clearcoat: 0.015, tint: '#ffffff', smoothTint: '#bcc3cb', oneSidedRelief: true, protectiveFilm: true },
-  'aluminum-antitrace': { set: 'brushed', roughness: 0.6, metalness: 0.78, bumpScale: 0.035, normalScale: 0.24, clearcoat: 0.08, tint: '#e8edf1' },
-  'aluminum-anodized': { set: 'aluminum', roughness: 0.52, metalness: 0.82, bumpScale: 0.035, normalScale: 0.18, clearcoat: 0.18, tint: '#e4eaf0' },
+  // Protective plastic is a separate shader layer over the real raw aluminium.
+  'aluminum-filmed': { set: 'blendAluminumRaw', roughness: 0.62, metalness: 0.78, bumpScale: 0, normalScale: 0.22, clearcoat: 0.08, tint: '#ffffff', smoothTint: '#bcc3cb', oneSidedRelief: true, protectiveFilm: true },
+  'aluminum-antitrace': { set: 'brushed', roughness: 0.6, metalness: 0.78, bumpScale: 0.035, normalScale: 0.24, clearcoat: 0.08, tint: '#e8edf1', oneSidedRelief: true, protectiveFilm: true },
+  'aluminum-anodized': { set: 'aluminum', roughness: 0.52, metalness: 0.82, bumpScale: 0.035, normalScale: 0.18, clearcoat: 0.18, tint: '#e4eaf0', oneSidedRelief: true, protectiveFilm: true },
   'aluminum-perforated': { set: 'perforated', roughness: 0.64, metalness: 0.8, bumpScale: 0.02, normalScale: 0.32, clearcoat: 0.04 },
   'aluminum-larme': { set: 'blendFiveBar', roughness: 0.32, metalness: 1, bumpScale: 0, normalScale: 1, clearcoat: 0.1, tint: '#ffffff', smoothTint: '#c4cbd2', oneSidedRelief: true },
   // A satin metal, not a varnished or mirror surface. Subtle micro-relief
   // avoids turning the brushed grain into visibly raised grooves.
-  'stainless-brushed': { set: 'inoxBrushedPbr', roughness: 0.38, metalness: 1, bumpScale: 0.008, normalScale: 0.08, clearcoat: 0, tint: '#f3f1ed' },
+  'stainless-brushed': { set: 'inoxBrushedPbr', roughness: 0.38, metalness: 1, bumpScale: 0.008, normalScale: 0.08, clearcoat: 0, tint: '#f3f1ed', oneSidedRelief: true, protectiveFilm: true },
   'stainless-raw': { set: 'inoxRawPbr', roughness: 0.64, metalness: 0.92, bumpScale: 0.06, normalScale: 0.24, clearcoat: 0.18, tint: '#e5e9ed' },
-  'stainless-bright': { set: 'inoxBrightPbr', roughness: 0.38, metalness: 0.96, bumpScale: 0, normalScale: 0.12, clearcoat: 0.42 },
+  'stainless-bright': { set: 'inoxBrightPbr', roughness: 0.38, metalness: 0.96, bumpScale: 0, normalScale: 0.12, clearcoat: 0.42, oneSidedRelief: true, protectiveFilm: true },
   'stainless-mirror': { set: 'mirrorStainless', roughness: 0.035, metalness: 1, bumpScale: 0, normalScale: 0, clearcoat: 0, mirrorFace: true, oneSidedRelief: true, smoothTint: '#b6bdc5' },
   'stainless-antislip': { set: 'tread', roughness: 0.6, metalness: 0.9, bumpScale: 1.5, normalScale: 1, clearcoat: 0.1, tint: '#e1e5e9', smoothTint: '#c5c9ce', oneSidedRelief: true },
   'stainless-marine': { set: 'polishedSilver', roughness: 0.4, metalness: 0.97, bumpScale: 0.02, normalScale: 0.12, clearcoat: 0.38 },
-  'stainless-marine-raw': { set: 'rawSteel', roughness: 0.61, metalness: 0.93, bumpScale: 0.055, normalScale: 0.23, clearcoat: 0.18, tint: '#e8ecef' },
-  'stainless-leather': { set: 'leatherStainless', roughness: 0.32, metalness: 1, bumpScale: 0.45, normalScale: 0, clearcoat: 0, leatherRelief: true, oneSidedRelief: true, tint: '#e4e6e8', smoothTint: '#b6bdc5' },
+  'stainless-marine-raw': { set: 'rawSteel', roughness: 0.61, metalness: 0.93, bumpScale: 0.055, normalScale: 0.23, clearcoat: 0.18, tint: '#e8ecef', oneSidedRelief: true, protectiveFilm: true },
+  'stainless-leather': { set: 'leatherStainless', roughness: 0.32, metalness: 1, bumpScale: 0.45, normalScale: 0, clearcoat: 0, leatherRelief: true, oneSidedRelief: true, protectiveFilm: true, tint: '#e4e6e8', smoothTint: '#b6bdc5' },
   'stainless-magnetic': { set: 'rawSteel', roughness: 0.6, metalness: 0.72, bumpScale: 0.06, normalScale: 0.24, clearcoat: 0.12, tint: '#e1e5e9' },
 };
