@@ -90,7 +90,7 @@ export function useImportedPbrMaterial(finish: SheetFinish, realistic: boolean, 
       textured.metalnessMap = null;
       textured.color.set('#ffffff');
     }
-    if (roughnessMap && !profile.mirrorFace && !profile.protectiveFilm) {
+    if (roughnessMap && !profile.mirrorFace) {
       // Three.js multiplies roughness by the map's green channel. Preserve its
       // variation while lifting dark pixels that produce sharp studio glints.
       textured.onBeforeCompile = (shader) => {

@@ -92,6 +92,12 @@ export function createFilmPeelGeometry(peel: FilmPeel, existing?: BufferGeometry
 }
 
 const filmSizeUniforms = new WeakMap<MeshPhysicalMaterial, { value: number }>();
+const filmCoverageUniforms = new WeakMap<MeshPhysicalMaterial, { value: number }>();
+
+export function setProtectiveFilmCoverage(material: MeshPhysicalMaterial, coverage: number) {
+  const uniform = filmCoverageUniforms.get(material);
+  if (uniform) uniform.value = Math.max(0, Math.min(1, coverage));
+}
 
 /** Update only the cosmetic shader mask, never the sheet/CAD geometry. */
 export function setProtectiveFilmSize(material: MeshPhysicalMaterial, size: number) {
@@ -111,29 +117,24 @@ export function applyProtectiveFilm(material: MeshPhysicalMaterial, peel?: FilmP
       filmAlong: { value: peel?.along || new Vector3(1, 0, 0) },
       filmAcross: { value: peel?.across || new Vector3(0, 0, 1) },
       filmSize: { value: peel?.size || 0 },
+      // Explicit opt-in by the workflow layer; other views/export stay bare.
+      filmOpacity: { value: 0 },
     });
     filmSizeUniforms.set(material, shader.uniforms.filmSize);
+    filmCoverageUniforms.set(material, shader.uniforms.filmOpacity);
     shader.vertexShader = 'varying vec3 vFilmPosition;\nvarying vec2 vFilmUv;\n' + shader.vertexShader;
     shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvFilmPosition = position; vFilmUv = uv;');
     shader.fragmentShader = `varying vec3 vFilmPosition;
       varying vec2 vFilmUv;
       uniform vec3 filmOrigin, filmAlong, filmAcross;
-      uniform float filmSize;
-      float filmBubble(vec2 p, vec2 center, float radius) {
-        vec2 d = (p - center) / radius;
-        return exp(-dot(d,d) * 2.0);
-      }
+      uniform float filmSize, filmOpacity;
     ` + shader.fragmentShader;
     shader.fragmentShader = shader.fragmentShader.replace('#include <map_fragment>', `#include <map_fragment>
       vec3 filmLocal = vFilmPosition - filmOrigin;
       float filmU = dot(filmLocal, filmAlong), filmV = dot(filmLocal, filmAcross);
       float filmCover = 1.0;
       if (filmSize > 0.0 && filmU >= -0.01 && filmV >= -0.01 && filmU + filmV < filmSize) filmCover = 0.0;
-      vec2 bubbleUv = mod(vFilmUv, 87.0);
-      float filmAir = filmBubble(bubbleUv, vec2(21.0,32.0), 5.5)
-        + 0.62 * filmBubble(bubbleUv, vec2(66.0,58.0), 3.5)
-        + 0.3 * filmBubble(bubbleUv, vec2(47.0,14.0), 2.0);
-      float filmHeight = filmCover * 0.72 * filmAir;
+      filmCover *= filmOpacity;
       // The plate stays opaque; transparency belongs to the protective layer.
       // Retain the underlying metal map instead of replacing it with blue paint.
       vec3 filmTintedMetal = mix(diffuseColor.rgb, vec3(0.035,0.28,0.68), 0.3);
@@ -146,12 +147,7 @@ export function applyProtectiveFilm(material: MeshPhysicalMaterial, peel?: FilmP
       #include <normal_fragment_maps>
       // Preserve the actual metal relief where the film is peeled away.
       normal = normalize(mix(normal, filmBaseNormal, filmCover * 0.6));
-      vec3 filmDx = dFdx(-vViewPosition), filmDy = dFdy(-vViewPosition);
-      vec3 filmR1 = cross(filmDy, normal), filmR2 = cross(normal, filmDx);
-      float filmDet = dot(filmDx, filmR1);
-      vec3 filmGradient = sign(filmDet) * (dFdx(filmHeight) * filmR1 + dFdy(filmHeight) * filmR2);
-      if (abs(filmDet) > 0.00000001) normal = normalize(abs(filmDet) * normal - filmGradient);
     `);
   };
-  material.customProgramCacheKey = () => 'protective-film-blue-v3';
+  material.customProgramCacheKey = () => 'protective-film-workflow-v4';
 }

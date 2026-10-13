@@ -1,19 +1,23 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, type RefObject } from 'react';
 import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
-import { DoubleSide, Vector3, type MeshPhysicalMaterial } from 'three';
+import { DoubleSide, Vector3, type Mesh, type MeshPhysicalMaterial } from 'three';
 import { createFilmPeelGeometry, setProtectiveFilmSize, type FilmPeel } from './protectiveFilm';
 
 /** Cosmetic interaction only. Dragging changes uniforms and a reusable vertex
  * buffer, never dimensions, CSG, project state or STEP export. */
-export default function ProtectiveFilmCorner({ peel, material, interactive = true }: {
+export default function ProtectiveFilmCorner({ peel, material, interactive = true, coverage, removing = false }: {
   peel: FilmPeel; material: MeshPhysicalMaterial; interactive?: boolean;
+  coverage?: RefObject<number>; removing?: boolean;
 }) {
   const geometry = useMemo(() => createFilmPeelGeometry(peel), [peel]);
   const { gl, camera, controls, invalidate } = useThree();
   const motion = useRef({ current: peel.size, target: peel.size });
   const release = useRef<(() => void) | undefined>(undefined);
   const keyboardControl = useRef<HTMLButtonElement>(null);
+  const flap = useRef<Mesh>(null);
+  const plastic = useRef<MeshPhysicalMaterial>(null);
+  useEffect(() => { if (!interactive) release.current?.(); }, [interactive]);
 
   useEffect(() => {
     motion.current = { current: peel.size, target: peel.size };
@@ -26,6 +30,10 @@ export default function ProtectiveFilmCorner({ peel, material, interactive = tru
 
   useFrame((_, delta) => {
     const m = motion.current;
+    const visibleAmount = coverage?.current ?? 1;
+    if (flap.current) flap.current.visible = visibleAmount > .005;
+    if (plastic.current) plastic.current.opacity = .48 * visibleAmount;
+    if (removing) m.target = visibleAmount > .005 ? peel.maxSize ?? peel.size : peel.size;
     const next = m.current + (m.target - m.current) * (1 - Math.exp(-12 * Math.min(delta, .05)));
     if (Math.abs(next - m.current) < .001 && Math.abs(m.target - m.current) < .01) return;
     m.current = Math.abs(m.target - next) < .01 ? m.target : next;
@@ -84,12 +92,12 @@ export default function ProtectiveFilmCorner({ peel, material, interactive = tru
   };
 
   return <>
-    <mesh geometry={geometry}
+    <mesh ref={flap} geometry={geometry}
       raycast={interactive ? undefined : () => {}}
       onPointerDown={beginDrag}
       onPointerOver={() => { if (interactive && !release.current) gl.domElement.style.cursor = 'grab'; }}
       onPointerOut={() => { if (!release.current) gl.domElement.style.cursor = ''; }}>
-      <meshPhysicalMaterial color="#489be5" metalness={0} roughness={.2} clearcoat={.8} clearcoatRoughness={.2}
+      <meshPhysicalMaterial ref={plastic} color="#489be5" metalness={0} roughness={.2} clearcoat={.8} clearcoatRoughness={.2}
         transparent opacity={.48} depthWrite={false} side={DoubleSide} />
     </mesh>
     {interactive && <Html position={peel.origin} zIndexRange={[10, 0]}>

@@ -4,7 +4,7 @@ import { MeshPhysicalMaterial, ShaderLib, UniformsUtils, Vector3 } from 'three';
 import { createDefaultProject } from '../projectDefaults.ts';
 import { generateSheetProfile, createOneSidedTreadGeometry, type SheetMetalState, type SheetFinish } from '../sheetGeometry.ts';
 import { FINISH_TEXTURE_PROFILES } from '../viewer/materials/textureCatalog.ts';
-import { filmPeelCorner, createFilmPeelGeometry, applyProtectiveFilm, setProtectiveFilmSize } from '../viewer/materials/protectiveFilm.ts';
+import { filmPeelCorner, createFilmPeelGeometry, applyProtectiveFilm, setProtectiveFilmSize, setProtectiveFilmCoverage } from '../viewer/materials/protectiveFilm.ts';
 
 const filmed = () => ({ ...createDefaultProject(), material: 'Aluminum' as const, finish: 'aluminum-filmed' as const });
 const peelFor = (state: SheetMetalState) => filmPeelCorner(state, generateSheetProfile(state).legTransforms);
@@ -101,11 +101,15 @@ test('film shader keeps the base metal, replaces only the covered finish and has
     assert.match(shader.vertexShader, /vFilmPosition = position/);
     assert.match(shader.fragmentShader, /filmU \+ filmV < filmSize/);
     assert.match(shader.fragmentShader, /metalnessFactor = mix\(metalnessFactor, 0.0, filmCover \* 0.55\)/);
-    assert.match(shader.fragmentShader, /filmBubble/);
-    assert.match(shader.fragmentShader, /abs\(filmDet\) > /);
-    assert.equal(material.customProgramCacheKey(), 'protective-film-blue-v3');
+    assert.doesNotMatch(shader.fragmentShader, /filmBubble|bubbleUv|filmAir/);
+    assert.equal(shader.uniforms.filmOpacity.value, 0, 'bare metal is the default');
+    setProtectiveFilmCoverage(material, 1);
+    assert.equal(shader.uniforms.filmOpacity.value, 1);
+    setProtectiveFilmCoverage(material, 0);
+    assert.equal(shader.uniforms.filmOpacity.value, 0);
+    assert.equal(material.customProgramCacheKey(), 'protective-film-workflow-v4');
     assert.match(shader.fragmentShader, /mix\(diffuseColor.rgb, vec3\(0.035,0.28,0.68\), 0.3\)/);
-    assert.match(shader.fragmentShader, /filmCover \* 0.72 \* filmAir/);
+    assert.match(shader.fragmentShader, /filmCover \*= filmOpacity/);
     assert.match(shader.fragmentShader, /mix\(normal, filmBaseNormal, filmCover \* 0.6\)/);
     assert.ok(shader.fragmentShader.includes('#include <map_fragment>'));
   } finally { material.dispose(); }

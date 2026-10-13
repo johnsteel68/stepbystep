@@ -23,7 +23,8 @@ import { createVectorCutterGeometry, createOblongBufferGeometry, createRoundedRe
 import { numberPreviewCutouts } from './viewer/annotations/previewCutouts';
 import { useImportedPbrMaterial } from './viewer/materials/useSheetMaterial';
 import { filmPeelCorner } from './viewer/materials/protectiveFilm';
-import ProtectiveFilmCorner from './viewer/materials/ProtectiveFilmCorner';
+import ProtectiveFilmLayer from './viewer/materials/ProtectiveFilmLayer';
+import { FINISH_TEXTURE_PROFILES } from './viewer/materials/textureCatalog';
 import { explicitHoles, holeSeries } from './holeEditing';
 import type { ViewerProps } from './viewerTypes';
 import React, { useMemo, useRef, useState, useEffect } from 'react';
@@ -862,6 +863,7 @@ export const SheetMetalGroup = React.memo(function SheetMetalGroup({
   showDimensionInfo = false,
   exportOnly = false,
   filmInteractive = true,
+  filmStage = 'hidden',
   exportGrainDirection,
   grainDirection = 'length',
 }: SheetMetalGroupProps) {
@@ -1057,7 +1059,8 @@ export const SheetMetalGroup = React.memo(function SheetMetalGroup({
           leg.tip.y + leg.direction.y * dist + side * leg.normal.y * dimensions.thickness / 2, offset],
       }));
     }) }}>
-      {usePbrMaterial && filmPeel && <ProtectiveFilmCorner peel={filmPeel} interactive={filmInteractive && !placementMode}
+      {usePbrMaterial && !exportOnly && FINISH_TEXTURE_PROFILES[finish].protectiveFilm &&
+        <ProtectiveFilmLayer peel={filmPeel} stage={filmStage} interactive={filmInteractive && !placementMode}
         material={Array.isArray(sheetMaterials.material) ? sheetMaterials.material[1] : sheetMaterials.material} />}
       {showActiveBendCue && (
         <ActiveBendCue
@@ -1338,6 +1341,7 @@ function FlatMiniMap({ length, width, view }: { length: number; width: number; v
 
 export default function Viewer({ 
   temporaryDimension = null,
+  filmStage = 'hidden',
   dimensions, 
   profileData,
   activeBendIndex = 0,
@@ -1724,6 +1728,7 @@ export default function Viewer({
           restTiltZ={restTiltZ}
         >
           <SheetMetalGroup
+            filmStage={filmStage}
             dimensions={dimensions}
             grainDirection={grainDirection}
             profileData={profileData}

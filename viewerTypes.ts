@@ -6,6 +6,7 @@ export interface ViewerProps {
   temporaryDimension?: import('./useDimensionFeedback').DimensionFeedback | null;
   profileData: ProfileGeometryData;
   realistic: boolean;
+  filmStage?: import('./viewer/materials/filmPresentation').FilmStage;
   grainDirection?: 'length' | 'width';
   activeBendIndex?: number;
   showActiveBendCue?: boolean;

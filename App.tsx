@@ -1,5 +1,6 @@
 import React, { lazy, Suspense, useState, useEffect, useMemo, useRef } from 'react';
 import { createWorkflow } from './workflow';
+import { filmStageForSection } from './viewer/materials/filmPresentation';
 import { BlankShapeControls, BlankFoldControls } from './components/BlankShapeControls';
 import TextControls from './components/TextControls';
 import TextPlacementView from './components/TextPlacementView';
@@ -1168,6 +1169,7 @@ export default function App({ embedded = false }: { embedded?: boolean }) {
         <RenderBoundary scope="viewer">
         <Suspense fallback={<div className="viewer-loading" role="status"><Loader2 size={24} className="animate-spin" /><span>Chargement de la vue 3D…</span></div>}>
         <Viewer
+          filmStage={filmStageForSection(openStep)}
           dimensions={state}
           temporaryDimension={dimensionFeedback.dimension && {
             ...dimensionFeedback.dimension,
