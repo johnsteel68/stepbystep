@@ -111,7 +111,7 @@ export default function TextControls({ state, onChange, onDraftChange, placement
       onClick={() => update({ height: textMinimumHeight(state.thickness, draft.font) })}>Réduire à la taille minimale</button>
     <DimensionField id="text-x" label="Position X du centre" value={draft.x} min={0} max={leg.length} onChange={x => update({ x })} />
     <DimensionField id="text-y" label="Position Y du centre" value={draft.y} min={0} max={state.width} onChange={y => update({ y })} />
-    <DimensionField id="text-rotation" label="Rotation du texte (°)" value={normalizeTextRotation(draft.rotation)} min={0} max={360}
+    <DimensionField id="text-rotation" label="Rotation du texte" unit="°" value={normalizeTextRotation(draft.rotation)} min={0} max={360}
       onChange={rotation => update({ rotation: normalizeTextRotation(rotation) })} />
     <p className="step-intro">Tour complet : 0°, 45°, 90°… 315°. La poignée près d’un coin tourne librement ; Maj accroche les angles à 45°. Le centre reste fixe.</p>
     <div className="flex gap-2">
