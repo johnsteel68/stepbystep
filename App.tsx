@@ -98,10 +98,10 @@ export default function App({ embedded = false }: { embedded?: boolean }) {
   const [confirmClearAllHoles, setConfirmClearAllHoles] = useState(false);
   const [error, setError] = useState<string | null>(() => !embedded && typeof window !== 'undefined' && (window.location.hash.startsWith(PROJECT_HASH) || new URL(window.location.href).searchParams.has(PROJECT_QUERY)) && !sharedProject ? 'Ce lien de projet est invalide ou incomplet. La pièce par défaut a été chargée.' : null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
-  const [openStep, setOpenStep] = useState(4);
+  const [openStep, setOpenStep] = useState(sharedProject ? 9 : 4);
   const [proMode, setProMode] = useState(false);
   const { appRoot, mobileDock, setMobileDock } = useMobileWorkspace(setProMode);
-  const [guidedStep, setGuidedStep] = useState(1);
+  const [guidedStep, setGuidedStep] = useState(() => sharedProject ? createWorkflow(normalizeFormedBlank(sharedProject.state)).length : 1);
   const [selectedProBendIndex, setSelectedProBendIndex] = useState(0);
   const [selectedProLegIndex, setSelectedProLegIndex] = useState(0);
   const [editingLengthLegIndex, setEditingLengthLegIndex] = useState<number | null>(null);
@@ -142,8 +142,8 @@ export default function App({ embedded = false }: { embedded?: boolean }) {
       setPlacementDraft(null);
       setPlacementTargetLegId(null);
       setReadyDeck(null);
-      setGuidedStep(1);
-      setOpenStep(4);
+      setGuidedStep(createWorkflow(normalizeFormedBlank(project.state)).length);
+      setOpenStep(9);
       setProMode(false);
     };
     window.addEventListener('hashchange', restore);
