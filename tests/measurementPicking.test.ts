@@ -57,3 +57,25 @@ test('an empty viewport has no selectable feature', () => {
   const emptyCanvas = { getBoundingClientRect: () => ({ width: 0, height: 0 } as DOMRect) };
   assert.equal(createMeasurementPicker(emptyCanvas, camera, scene)({ clientX: 0, clientY: 0 }), null);
 });
+
+test('bend references snap as segments, follow transforms and respect occlusion', () => {
+  const { scene, group, pick } = setup();
+  group.userData.measureHoles = [];
+  group.userData.measureBends = [{ id: 'bend-inner', a: [-50, 0, 0], b: [50, 0, 0], label: 'Pli 1 · intérieur' }];
+  assert.equal(pick({ clientX: 110, clientY: 100 })?.kind, 'bend');
+  group.position.y = 40;
+  assert.equal(pick({ clientX: 110, clientY: 100 }), null);
+  assert.equal(pick({ clientX: 110, clientY: 60 })?.label, 'Pli 1 · intérieur');
+  const geometry = new BoxGeometry(150, 150, 2);
+  const material = new MeshBasicMaterial();
+  const sheet = new Mesh(geometry, material);
+  sheet.position.z = 10;
+  sheet.userData.measureSurface = true;
+  scene.add(sheet);
+  try {
+    assert.notEqual(pick({ clientX: 110, clientY: 60 })?.kind, 'bend');
+  } finally { geometry.dispose(); material.dispose(); }
+  sheet.visible = false;
+  group.visible = false;
+  assert.equal(pick({ clientX: 110, clientY: 60 }), null);
+});

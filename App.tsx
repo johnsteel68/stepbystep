@@ -6,7 +6,7 @@ import TextPlacementView from './components/TextPlacementView';
 import { hasPendingStencilText, type StencilText } from './stencilText';
 import { useDimensionFeedback } from './useDimensionFeedback';
 import { normalizeFormedBlank, blankHoleAllowed } from './formedBlank';
-import { createDefaultProject } from './projectDefaults';
+import { createDefaultProject, selectProjectBendCount } from './projectDefaults';
 import { useManufacturingExports } from './hooks/useManufacturingExports';
 import OrderButton from './components/OrderButton';
 import type { GrainDirection } from './technicalDrawing';
@@ -237,14 +237,14 @@ export default function App({ embedded = false }: { embedded?: boolean }) {
   };
   const setBendCount = (count: number) => {
     const clamped = Math.max(0, Math.min(4, count));
-    const compatible = normalizeBendingSelection(state, clamped);
+    const compatible = selectProjectBendCount(state, clamped);
     if (compatible.finish !== state.finish || compatible.thickness !== state.thickness) {
       setSuccessMsg('Choix adapté au pliage : finition et épaisseur compatibles sélectionnées.');
     }
     setSelectedProBendIndex(0);
     setGuidedStep(1);
-    if (state.blankShape) commitBlank({ ...normalizeBendingSelection(state, clamped), blankBendPositions: undefined });
-    else setState(prev => normalizeBendingSelection(prev, clamped));
+    if (state.blankShape) commitBlank({ ...compatible, blankBendPositions: undefined });
+    else setState(prev => selectProjectBendCount(prev, clamped));
     setOpenStep(4);
   };
 

@@ -13,6 +13,7 @@ import { annotationOpenings, wingLabelPoint } from './viewer/annotations/labelLa
 import { getHoleRadii } from './sheetGeometry';
 import { ActiveBendCue } from './viewer/annotations/ActiveBendCue';
 import MeasureTool from './viewer/annotations/MeasureTool';
+import { bendMeasurementReferences } from './viewer/annotations/bendMeasurement';
 import { SelectedLegSurface, PlacementDistancePreview } from './viewer/annotations/Selection';
 import ContextLossGuard from './viewer/ContextLossGuard';
 import { PlacementCameraTransition, CornerRadiusCameraTransition, AutoFrameModel } from './viewer/camera/CameraControllers';
@@ -1034,7 +1035,7 @@ export const SheetMetalGroup = React.memo(function SheetMetalGroup({
     : null;
 
   return (
-    <group position={[posX, posY, posZ]} userData={{ measureHoles: activeHoleInstances.filter(hole => !hole.textCutout).flatMap(({ holeLeg, dist, offset, index }, number) => {
+    <group position={[posX, posY, posZ]} userData={{ measureBends: bendMeasurementReferences(dimensions, profileData.legTransforms), measureHoles: activeHoleInstances.filter(hole => !hole.textCutout).flatMap(({ holeLeg, dist, offset, index }, number) => {
       const leg = profileData.legTransforms.find(item => item.id === holeLeg.id);
       if (!leg) return [];
       // Expose exact CAD centres on both faces. The ruler rejects whichever

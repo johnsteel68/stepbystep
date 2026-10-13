@@ -13,15 +13,15 @@ import { getGoogleStencilGlyphs } from '../googleStencilLoader.ts';
 const flat = () => ({ ...createDefaultProject(), bendCount: 0, width: 150, legs: createDefaultProject().legs.map(l => ({ ...l, length: 200 })) });
 const config = { text: 'A1', height: 30, x: 100, y: 75, rotation: 0 as const };
 test('font picker offers distinct designs while preserving legacy variant identifiers', () => {
-  assert.equal(SELECTABLE_STENCIL_FONTS.length, 36);
+  assert.equal(SELECTABLE_STENCIL_FONTS.length, 38);
   for (const id of ['stencil-condensed', 'stencil-wide', 'stencil-tenada-condensed', 'stencil-tenada-wide']) {
     assert.ok(STENCIL_FONTS.some(font => font.id === id));
     assert.ok(!SELECTABLE_STENCIL_FONTS.some(font => font.id === id));
   }
 });
 test('distinct Google stencil designs decode once and retain their original outlines when moved', () => {
-  assert.equal(GOOGLE_STENCIL_FONTS.length, 27);
-  assert.equal(new Set(GOOGLE_STENCIL_FONTS.map(font => font.id)).size, 27);
+  assert.equal(GOOGLE_STENCIL_FONTS.length, 29);
+  assert.equal(new Set(GOOGLE_STENCIL_FONTS.map(font => font.id)).size, 29);
   const outlines = new Set<string>();
   for (const font of GOOGLE_STENCIL_FONTS) {
     const glyphs = getGoogleStencilGlyphs(font.id)!;
@@ -31,7 +31,7 @@ test('distinct Google stencil designs decode once and retain their original outl
     stencilCells({ ...config, font: font.id, height: textMinimumHeight(2, font.id), x: 700, y: 300, rotation: 90 }, 2);
     assert.equal(JSON.stringify(glyphs), original, 'Dragging/rotation must never mutate the shared font cache');
   }
-  assert.equal(outlines.size, 27, 'These are different designs, not stretched duplicates');
+  assert.equal(outlines.size, 29, 'These are different designs, not stretched duplicates');
 });
 test('terminal-wing vector letters retain their handedness after validation', () => {
   const settings = { ...config, text: 'RORO', font: 'stencil-tenada' as const, height: 72, x: 250, y: 100 };

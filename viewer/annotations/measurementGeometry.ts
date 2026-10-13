@@ -1,6 +1,6 @@
 import { EdgesGeometry, Vector3, type BufferGeometry } from 'three';
 
-export type MeasureFeature = { id: string; kind: 'corner' | 'edge' | 'hole'; a: Vector3; b?: Vector3; label: string };
+export type MeasureFeature = { id: string; kind: 'corner' | 'edge' | 'hole' | 'bend'; a: Vector3; b?: Vector3; label: string };
 export function closestOnEdge(point: Vector3, a: Vector3, b: Vector3) {
   const delta = b.clone().sub(a);
   const t = delta.lengthSq() ? Math.max(0, Math.min(1, point.clone().sub(a).dot(delta) / delta.lengthSq())) : 0;

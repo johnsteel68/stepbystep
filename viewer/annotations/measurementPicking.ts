@@ -1,12 +1,13 @@
 import { Raycaster, Vector2, Vector3, Mesh, type Camera, type Object3D } from 'three';
 import { closestOnEdge, meshFeatures, type MeasureFeature } from './measurementGeometry.ts';
+import type { BendMeasurementReference } from './bendMeasurement.ts';
 
 const EDGE_PICK_RADIUS_PX = 10;
 const POINT_PICK_RADIUS_PX = 18;
 const OCCLUSION_TOLERANCE_MM = 0.15;
 
 // À distance comparable, privilégier un centre de trou, puis un coin.
-const FEATURE_PRIORITY_PX = { hole: 0, corner: 2, edge: 8 } as const;
+const FEATURE_PRIORITY_PX = { hole: 0, corner: 2, bend: 4, edge: 8 } as const;
 
 interface HoleReference {
   id: string;
@@ -48,6 +49,12 @@ export function createMeasurementPicker(
           a: new Vector3(...hole.point).applyMatrix4(object.matrixWorld),
           label: hole.label,
         });
+      }
+
+      for (const bend of (object.userData.measureBends || []) as BendMeasurementReference[]) {
+        features.push({ id: `${object.uuid}-${bend.id}`, kind: 'bend', label: bend.label,
+          a: new Vector3(...bend.a).applyMatrix4(object.matrixWorld),
+          b: new Vector3(...bend.b).applyMatrix4(object.matrixWorld) });
       }
 
       if (!(object instanceof Mesh) || !object.userData.measureSurface) return;
@@ -92,7 +99,7 @@ export function createMeasurementPicker(
       const end = feature.b ? toPixels(feature.b) : start;
       const closest = closestOnEdge(cursor, start, end);
       const distancePx = closest.distanceTo(cursor);
-      const pickRadius = feature.kind === 'edge' ? EDGE_PICK_RADIUS_PX : POINT_PICK_RADIUS_PX;
+      const pickRadius = feature.b ? EDGE_PICK_RADIUS_PX : POINT_PICK_RADIUS_PX;
       if (distancePx > pickRadius) continue;
 
       const screenLength = start.distanceTo(end);
