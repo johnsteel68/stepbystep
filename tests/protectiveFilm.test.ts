@@ -117,7 +117,7 @@ test('film shader keeps the base metal, replaces only the covered finish and has
 
 test('dragging reuses the flap buffer and returns to the same dog-eared shape', () => {
   const peel = peelFor(filmed())!;
-  assert.ok(peel.maxSize! > 300 * 1.8 && peel.maxSize! <= 300 * 1.9);
+  assert.ok(peel.maxSize! > peel.size && peel.maxSize! <= 298);
   const geometry = createFilmPeelGeometry(peel);
   try {
     const buffer = geometry.getAttribute('position');
@@ -129,4 +129,28 @@ test('dragging reuses the flap buffer and returns to the same dog-eared shape', 
     assert.deepEqual(Array.from(buffer.array), initial);
     assert.ok(geometry.boundingSphere && Number.isFinite(geometry.boundingSphere.radius));
   } finally { geometry.dispose(); }
+});
+
+test('maximum peel stays within the current wing for dragging and auto-removal', () => {
+  for (const bendCount of [0, 1, 3, 4]) {
+    for (const [length, width] of [[60, 300], [300, 20], [300, 300], [1200, 1480]]) {
+      const state = { ...filmed(), bendCount, width };
+      state.legs = state.legs.map(leg => ({ ...leg, length }));
+      const profile = generateSheetProfile(state);
+      const wing = profile.legTransforms[0];
+      const straight = Math.hypot(wing.bendStart.x - wing.tip.x, wing.bendStart.y - wing.tip.y);
+      const peel = filmPeelCorner(state, profile.legTransforms)!;
+      assert.ok(peel.maxSize! <= Math.min(straight, width) - 2 + 1e-6);
+      const geometry = createFilmPeelGeometry({ ...peel, size: peel.maxSize! });
+      try {
+        const positions = geometry.getAttribute('position');
+        for (let i = 0; i < positions.count; i++) {
+          const local = new Vector3().fromBufferAttribute(positions, i).sub(peel.origin);
+          const along = local.dot(peel.along), across = local.dot(peel.across);
+          assert.ok(along >= -1e-4 && along <= straight - 2 + 1e-4);
+          assert.ok(across >= -1e-4 && across <= width - 2 + 1e-4);
+        }
+      } finally { geometry.dispose(); }
+    }
+  }
 });

@@ -47,7 +47,10 @@ export function filmPeelCorner(state: SheetMetalState, legs: LegTransform[]): Fi
         holeLength: cut.length ?? leg.holeLength, holeWidth: cut.width ?? leg.holeWidth,
         holeOrientation: cut.orientation || leg.holeOrientation });
       return Math.min(limit, Math.max(cut.dist - extent.rx, (side ? state.width - cut.offset : cut.offset) - extent.rz) - 2);
-    }, Math.min(straightLength, state.width) * 1.9);
+    // Both the triangular mask and the curled flap must remain inside this
+    // wing's straight rectangle. Leave 2 mm before its bend/lateral boundary.
+    // The same limit is used by pointer dragging, keyboard and auto-removal.
+    }, Math.min(straightLength, state.width) - 2);
     const normal = new Vector3(wing.normal.x, wing.normal.y, 0);
     return { origin: new Vector3(wing.tip.x, wing.tip.y, side ? state.width : 0).addScaledVector(normal, Math.max(1, state.thickness) / 2),
       along: new Vector3(wing.direction.x, wing.direction.y, 0), across: new Vector3(0, 0, side ? -1 : 1), normal, size, maxSize: Math.max(size, maxSize) };

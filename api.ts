@@ -597,7 +597,9 @@ export async function generateStepFile(input: any): Promise<string> {
           : makeProfileCutter(
             hole,
             [centerX, centerY, z],
-            new Plane([centerX, centerY, z], [tangent[0], tangent[1], 0], [normal[0], normal[1], 0]),
+            // Plane Y = normal × X. Use the opposite surface normal so
+            // local glyph Y follows sheet-width +Z, as in the viewer.
+            new Plane([centerX, centerY, z], [tangent[0], tangent[1], 0], [-normal[0], -normal[1], 0]),
             [normal[0], normal[1], 0],
           );
         solid = solid.cut(cutter);
@@ -736,6 +738,8 @@ export async function generateStepFile(input: any): Promise<string> {
           for (const point of contour.slice(1)) {
             cutterPath = cutterPath.lineTo([point.du, point.dw]);
           }
+          // draw() is a pen, not an extrudable face until explicitly closed.
+          cutterPath = cutterPath.close();
         }
         const cutterPlane = new Plane(
           [
@@ -743,8 +747,10 @@ export async function generateStepFile(input: any): Promise<string> {
             center[1] - legT.normal.y * thickness * 1.5,
             center[2],
           ],
-          [legT.direction.x, legT.direction.y, 0],
-          extrusionDirection,
+          // Terminal-wing distances point inward, opposite to the developed
+          // glyph X axis. The viewer uses rotationAngle for the contour.
+          [Math.cos(legT.rotationAngle), Math.sin(legT.rotationAngle), 0],
+          [-legT.normal.x, -legT.normal.y, 0],
         );
         const cutter = cutterPath.sketchOnPlane(cutterPlane).extrude(thickness * 3, {
           extrusionDirection,
