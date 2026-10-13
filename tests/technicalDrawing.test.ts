@@ -35,7 +35,7 @@ const plate = (): SheetMetalState => ({
 
 test('PDF QR uses the exact exported project, strips callback secrets and stays vector-sharp', async () => {
   const state = createDefaultProject();
-  const link = createProjectLink(state, 'width', 'https://step-generator.yop39.chatgpt.site/callback?code=secret');
+  const link = createProjectLink(state, 'width', 'https://stepbystep.john-steel.com/callback?code=secret');
   assert.ok(!link.includes('secret'));
   assert.equal(readProjectFromUrl(link)?.grainDirection, 'width');
   assert.equal(readProjectFromUrl(link)?.state.legs[0].holeDiam, 5);

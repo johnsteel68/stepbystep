@@ -8,7 +8,9 @@ import type { GrainDirection } from './technicalDrawing.ts';
 
 export const PROJECT_HASH = '#projet=v1.';
 export const PROJECT_QUERY = 'projet';
-export const PROJECT_SITE = 'https://step-generator.yop39.chatgpt.site/';
+export const PROJECT_SITE = 'https://stepbystep.john-steel.com/';
+// Lire les anciens projets reste possible, mais tout nouveau partage utilise le domaine John Steel.
+const LEGACY_PROJECT_ORIGIN = 'https://step-generator.yop39.chatgpt.site';
 const MAX_JSON_BYTES = 256_000;
 const MAX_LINK_BYTES = 32_000;
 export interface SharedProject { state: SheetMetalState; grainDirection: GrainDirection }
@@ -169,7 +171,7 @@ export function createProjectLink(state: SheetMetalState, grainDirection: GrainD
   const url = new URL(currentUrl);
   // Never share localhost/file URLs, login callback codes, query tokens or other fragments.
   const local = ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname);
-  const base = url.protocol === 'https:' && !local ? `${url.origin}/` : PROJECT_SITE;
+  const base = url.protocol === 'https:' && !local && url.origin !== LEGACY_PROJECT_ORIGIN ? `${url.origin}/` : PROJECT_SITE;
   // Query parameters survive the hosted site's sign-in return URL; fragments do not.
   return `${base}?${PROJECT_QUERY}=v1.${token}`;
 }

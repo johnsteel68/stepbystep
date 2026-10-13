@@ -20,7 +20,7 @@ test('customer link restores bends, dimensions, finish and holes exactly', () =>
   const restored = callTool('inspect_piece', { url: result.url });
   assert.deepEqual(restored.project, result.project);
   assert.equal(restored.project.state.legs[0].holePositions[0].diam, 5);
-  assert.ok(result.url.startsWith('https://step-generator.yop39.chatgpt.site/?projet='));
+  assert.ok(result.url.startsWith('https://stepbystep.john-steel.com/?projet='));
 });
 test('MCP creates a shareable validated plate, never an order', () => {
   const result = callTool('create_piece', base);

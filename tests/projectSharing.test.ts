@@ -70,6 +70,19 @@ test('sharing strips callback codes, query tokens and existing fragments', () =>
   assert.ok(createProjectLink(part(), 'length', 'https://stepbystep.john-steel.com/?code=secret').startsWith('https://stepbystep.john-steel.com/?projet='));
 });
 
+test('migration sends default, localhost and legacy shares to John Steel without changing the project', () => {
+  assert.equal(PROJECT_SITE, 'https://stepbystep.john-steel.com/');
+  const state = part();
+  const canonical = createProjectLink(state, 'length');
+  for (const current of [
+    'http://localhost:3000/',
+    'https://step-generator.yop39.chatgpt.site/?code=private',
+    'https://stepbystep.john-steel.com/callback?code=private',
+  ]) assert.equal(createProjectLink(state, 'length', current), canonical);
+  const legacy = canonical.replace(PROJECT_SITE, 'https://step-generator.yop39.chatgpt.site/');
+  assert.deepEqual(readProjectFromUrl(legacy), readProjectFromUrl(canonical));
+});
+
 test('invalid, unsupported, truncated and oversized links fall back safely', () => {
   for (const hash of ['', '#anything', '#projet=v2.AAAA', PROJECT_HASH, PROJECT_HASH + 'not-a-project', PROJECT_HASH + '<script>', PROJECT_HASH + 'A'.repeat(32_001)]) {
     assert.equal(readSharedProject(hash), null);
