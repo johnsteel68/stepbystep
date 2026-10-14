@@ -439,8 +439,8 @@ export function generateTechnicalDrawing(state: SheetMetalState, options: Drawin
   // Describe lettering once; its stencil cells remain drawn, but are not drill holes.
   const rows = ordinaryHoles.map(hole => [String(hole.number), holeDescription(hole.definition), mm(hole.center.x), mm(hole.center.y), hole.wing]);
   for (const wing of flat.wings) {
-    const config = wing.leg.cutText;
-    if (config) rows.push(['—', `${config.text} / ${STENCIL_FONTS.find(font => font.id === (config.font ?? 'pixel'))?.label} / H ${mm(config.height)} / ${config.rotation} deg.`, 'Voir dessin', 'Voir dessin', wing.leg.id]);
+    const texts = wing.leg.cutTexts?.length ? wing.leg.cutTexts : wing.leg.cutText ? [wing.leg.cutText] : [];
+    for (const config of texts) rows.push(['—', `${config.text} / ${STENCIL_FONTS.find(font => font.id === (config.font ?? 'pixel'))?.label} / H ${mm(config.height)} / ${config.rotation} deg.`, 'Voir dessin', 'Voir dessin', wing.leg.id]);
   }
   if (!rows.length) text('Aucun perçage sur la pièce.', 15, 189, 9, GREY);
   rows.forEach((row, i) => {

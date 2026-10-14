@@ -401,6 +401,15 @@ button[data-tooltip]:focus-visible::after { opacity: 1; }
 .hole-list-edit small { display: block; color: #94a2b5; font-size: 12px; margin-top: 5px; }
 .hole-list-edit svg { color: #ed829e; flex-shrink: 0; }
 .hole-list-delete { display: grid; place-items: center; min-width: 44px; min-height: 44px; color: #afbac9; }
+.text-block-manager { display: grid; gap: 10px; }
+.text-block-list { display: grid; gap: 6px; max-height: 220px; overflow: auto; }
+.text-block-row { display: flex; align-items: stretch; gap: 6px; border: 1px solid #ffffff1a; border-radius: 9px; background: #141a22; }
+.text-block-row.is-selected { border-color: #e83c69; background: #e83c6912; }
+.text-block-select { display: grid; grid-template-columns: 28px minmax(0,1fr); align-items: center; gap: 2px 9px; flex: 1; min-width: 0; min-height: 56px; padding: 8px; text-align: left; }
+.text-block-index { grid-row: span 2; display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: #e83c6926; color: #f48aa4; font: 700 12px/1 var(--font-mono); }
+.text-block-name { overflow: hidden; color: #f1f3f6; font-size: 13px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+.text-block-select small { color: #a2aec0; font-size: 11px; }
+.text-block-delete { align-self: center; min-height: 44px; padding: 0 10px; color: #f0a0b4; font-size: 12px; }
 .hole-delete-confirm { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 0; font-size: 12px; }
 .hole-delete-confirm button { min-height: 44px; padding: 0 10px; border: 1px solid #ffffff20; border-radius: 8px; }
 .hole-delete-confirm button:last-child { color: #ffa3bb; border-color: #e83c6970; }

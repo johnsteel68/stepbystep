@@ -31,7 +31,12 @@ export const STENCIL_FONTS = [
 export type StencilFont = typeof STENCIL_FONTS[number]['id'];
 // Keep old IDs readable for shared projects, without offering stretched clones.
 export const SELECTABLE_STENCIL_FONTS = STENCIL_FONTS.filter(font => font.id.startsWith('stencil') && !['stencil-condensed', 'stencil-wide', 'stencil-tenada-condensed', 'stencil-tenada-wide'].includes(font.id));
-export interface StencilText { text: string; height: number; x: number; y: number; rotation: number; font?: StencilFont }
+export interface StencilText { id?: string; text: string; height: number; x: number; y: number; rotation: number; font?: StencilFont }
+/** Normalize old projects to a stable one-block list without mutating their state. */
+export function getStencilTexts(leg: { cutTexts?: StencilText[]; cutText?: StencilText }, legId = 'A'): StencilText[] {
+  if (leg.cutTexts?.length) return leg.cutTexts;
+  return leg.cutText ? [{ ...leg.cutText, id: leg.cutText.id ?? `legacy-${legId}` }] : [];
+}
 export const textSafetyMargin = (thickness: number) => Math.max(3, thickness);
 /** A text edit is transactional: only return configurations accepted by the
  * same validator used for committing and exporting the cutouts. */
@@ -62,7 +67,8 @@ export function fitStencilText(state: SheetMetalState, legId: string, config: St
 }
 export function hasPendingStencilText(state: SheetMetalState, draft: { legId: string; config: StencilText } | null): boolean {
   if (!draft) return false;
-  const saved = state.legs.find(leg => leg.id === draft.legId)?.cutText;
+  const leg = state.legs.find(item => item.id === draft.legId);
+  const saved = leg && getStencilTexts(leg, leg.id).find(item => item.id === draft.config.id);
   if (!draft.config.text.trim()) return !!saved;
   return !saved || (['text', 'font', 'height', 'x', 'y', 'rotation'] as const).some(key => saved[key] !== draft.config[key]);
 }
@@ -266,17 +272,16 @@ export function stencilCells(config: StencilText, thickness: number): HolePositi
 /** Recheck after thickness/dimension edits; never silently move or resize text. */
 export function stencilTextIssue(state: SheetMetalState, legId: string): string | null {
   const leg = state.legs.find(item => item.id === legId);
-  if (!leg?.cutText) return null;
-  try {
-    const next = applyStencilText(state, legId, leg.cutText);
-    const signature = (holes: HolePosition[]) => holes.filter(h => h.textCutout).map(h => `${h.shape}:` + [h.dist, h.offset, h.diam ?? 0, h.length ?? 0, h.width ?? 0].map(v => v.toFixed(3)).join(':') + JSON.stringify(h.contour ?? [])).join('|');
-    if (signature(leg.holePositions ?? []) !== signature(next.legs.find(item => item.id === legId)!.holePositions ?? []))
-      return 'Les dimensions ou l’épaisseur ont changé : mettez le texte à jour.';
-    return null;
+  if (!leg) return null;
+  for (const config of getStencilTexts(leg, legId)) try {
+    const next = applyStencilText(state, legId, config, config.id);
+    const signature = (holes: HolePosition[]) => holes.filter(h => h.textCutout && (!config.id || h.textBlockId === config.id)).map(h => `${h.shape}:` + [h.dist, h.offset, h.diam ?? 0, h.length ?? 0, h.width ?? 0].map(v => v.toFixed(3)).join(':') + JSON.stringify(h.contour ?? [])).join('|');
+    if (signature(leg.holePositions ?? []) !== signature(next.legs.find(item => item.id === legId)!.holePositions ?? [])) return 'Les dimensions ou l’épaisseur ont changé : mettez le texte à jour.';
   } catch (error) { return (error as Error).message; }
+  return null;
 }
-export function applyStencilText(state: SheetMetalState, legId: string, config: StencilText | null): SheetMetalState {
-  return applyStencilCells(state, legId, config, config ? stencilCells(config, state.thickness) : []);
+export function applyStencilText(state: SheetMetalState, legId: string, config: StencilText | null, blockId = config?.id): SheetMetalState {
+  return applyStencilCells(state, legId, config, config ? stencilCells(config, state.thickness) : [], blockId);
 }
 
 /** Prepare immutable local outlines once per gesture geometry. Translation
@@ -291,7 +296,7 @@ export function createStencilPlacementValidator(state: SheetMetalState, legId: s
   };
 }
 
-function applyStencilCells(state: SheetMetalState, legId: string, config: StencilText | null, prepared: HolePosition[]): SheetMetalState {
+function applyStencilCells(state: SheetMetalState, legId: string, config: StencilText | null, prepared: HolePosition[], requestedBlockId = config?.id): SheetMetalState {
   const index = state.legs.findIndex(leg => leg.id === legId);
   const leg = state.legs[index];
   if (!leg || index > state.bendCount) throw new Error('Choisissez une aile visible.');
@@ -299,8 +304,12 @@ function applyStencilCells(state: SheetMetalState, legId: string, config: Stenci
     const issue = textAvailabilityIssue(state);
     if (issue) throw new Error(issue);
   }
-  const existing = explicitHoles(leg, state).filter(hole => !hole.textCutout);
+  const blockId = requestedBlockId ?? (leg.cutText ? `legacy-${legId}` : undefined);
+  const allExisting = explicitHoles(leg, state);
+  // A null id retains the historical "clear all text on this wing" behavior.
+  const existing = allExisting.filter(hole => !hole.textCutout || (blockId ? hole.textBlockId !== blockId && !(hole.textBlockId == null && leg.cutText && blockId === `legacy-${legId}`) : false));
   const cells = config ? prepared.map(cell => ({ ...cell,
+    textBlockId: blockId,
     // Terminal wing distances run opposite to the developed drawing X axis.
     dist: index === state.bendCount ? 2 * config.x - cell.dist : cell.dist,
     // Distances on the terminal wing are reversed, but local cutter X follows
@@ -346,6 +355,9 @@ function applyStencilCells(state: SheetMetalState, legId: string, config: Stenci
     })) throw new Error('Le texte est trop proche d’une autre découpe.');
   }
   const holes = [...existing, ...cells];
-  return { ...state, legs: state.legs.map((item, i) => i !== index ? item : { ...item, cutText: config ?? undefined,
-    hasHole: holes.length > 0, holePositions: holes, holePattern: undefined }) };
+  const prior = getStencilTexts(leg, legId).filter(item => item.id !== blockId && !(item.id?.startsWith('legacy-') && blockId === item.id));
+  const nextTexts = config ? [...prior, { ...config, id: blockId }] : blockId ? prior : [];
+  return { ...state, legs: state.legs.map((item, i) => i !== index ? item : { ...item, cutTexts: nextTexts.length ? nextTexts : undefined,
+    // Keep the legacy field populated for old consumers and old shared links.
+    cutText: nextTexts[0], hasHole: holes.length > 0, holePositions: holes, holePattern: undefined }) };
 }

@@ -22,7 +22,7 @@ function compact({ state: s, grainDirection }: SharedProject): unknown[] {
     s.cornerRadii ? [s.cornerRadii.startLeft, s.cornerRadii.startRight, s.cornerRadii.endLeft, s.cornerRadii.endRight] : null,
     s.holePattern ?? null, grainDirection,
     s.legs.map(l => [l.length, l.hasHole, l.holeDiam, l.holeDist, l.holeOffset, l.holeShape ?? null,
-      l.holeLength ?? null, l.holeWidth ?? null, l.holeOrientation ?? null, l.holeCornerRadius ?? null, l.holePattern ?? null, l.holePositions ?? null, l.cutText ?? null]),
+      l.holeLength ?? null, l.holeWidth ?? null, l.holeOrientation ?? null, l.holeCornerRadius ?? null, l.holePattern ?? null, l.holePositions ?? null, l.cutText ?? null, l.cutTexts ?? null]),
     s.bends.map(b => [b.angle, b.direction]), s.blankShape ? {
       blankShape: s.blankShape, blankLength: s.blankLength, blankWidth: s.blankWidth,
       blankInnerDiameter: s.blankInnerDiameter,
@@ -37,10 +37,11 @@ function expand(value: unknown): unknown {
   const [bendCount, material, finish, width, thickness, radius, corners, holes, grainDirection, legs, bends] = value;
   const state: Record<string, unknown> = { bendCount, material, finish, width, thickness,
     legs: legs.map((l: unknown, i: number) => {
-      if (!Array.isArray(l) || ![12, 13].includes(l.length)) throw new Error('Aile invalide');
+      if (!Array.isArray(l) || ![12, 13, 14].includes(l.length)) throw new Error('Aile invalide');
       const result: Record<string, unknown> = { id: 'ABCDE'[i], label: `Aile ${'ABCDE'[i]}`, length: l[0], hasHole: l[1], holeDiam: l[2], holeDist: l[3], holeOffset: l[4] };
       ['holeShape', 'holeLength', 'holeWidth', 'holeOrientation', 'holeCornerRadius', 'holePattern', 'holePositions'].forEach((key, n) => { if (l[n + 5] !== null) result[key] = l[n + 5]; });
       if (l[12] != null) result.cutText = l[12];
+      if (l[13] != null) result.cutTexts = l[13];
       return result;
     }), bends: bends.map((b: unknown, i: number) => {
       if (!Array.isArray(b) || b.length !== 2) throw new Error('Pli invalide');
@@ -83,6 +84,10 @@ function position(value: unknown): HolePosition {
   const p = record(value);
   const result: HolePosition = { dist: number(p.dist, -10_000), offset: number(p.offset, -10_000) };
   if (p.textCutout === true) result.textCutout = true;
+  if (p.textBlockId !== undefined) {
+    if (typeof p.textBlockId !== 'string' || !/^[\w-]{1,48}$/.test(p.textBlockId)) throw new Error('Identifiant de texte invalide');
+    result.textBlockId = p.textBlockId;
+  }
   if (p.contour !== undefined) {
     if (!result.textCutout || !Array.isArray(p.contour) || p.contour.length < 3 || p.contour.length > 512) throw new Error('Contour de texte invalide');
     result.contour = p.contour.map(value => { const point = record(value); return { x: number(point.x, -10_000), y: number(point.y, -10_000) }; });
@@ -107,14 +112,25 @@ function leg(value: unknown, index: number): LegConfig {
     if (p[key] !== undefined) result[key] = number(p[key]);
   }
   if (p.holePattern !== undefined) result.holePattern = pattern(p.holePattern);
-  if (p.cutText !== undefined) {
-    const t = record(p.cutText);
+  const parseText = (value: unknown): import('./stencilText.ts').StencilText => {
+    const t = record(value);
     if (typeof t.text !== 'string' || t.text.length > 16 || typeof t.rotation !== 'number' || !Number.isFinite(t.rotation)) throw new Error('Texte invalide');
-    result.cutText = { text: t.text, height: number(t.height, 1, 1000), x: number(t.x), y: number(t.y), rotation: normalizeTextRotation(number(t.rotation, -360_000, 360_000)) };
+    const text: import('./stencilText.ts').StencilText = { text: t.text, height: number(t.height, 1, 1000), x: number(t.x), y: number(t.y), rotation: normalizeTextRotation(number(t.rotation, -360_000, 360_000)) };
+    if (t.id !== undefined) {
+      if (typeof t.id !== 'string' || !/^[\w-]{1,48}$/.test(t.id)) throw new Error('Identifiant de texte invalide');
+      text.id = t.id;
+    }
     if (t.font !== undefined) {
       if (!['pixel', 'industrial', 'dots', 'stencil', 'stencil-condensed', 'stencil-wide', 'stencil-sign', 'stencil-slab', 'stencil-tenada', 'stencil-tenada-condensed', 'stencil-tenada-wide', 'stencil-sunfonts', 'stencil-butler', 'stencil-micro-block', 'stencil-micro-round', 'stencil-micro-tech', ...GOOGLE_STENCIL_FONTS.map(font => font.id)].includes(t.font as string)) throw new Error('Police invalide');
-      result.cutText.font = t.font as import('./stencilText.ts').StencilFont;
+      text.font = t.font as import('./stencilText.ts').StencilFont;
     }
+    return text;
+  };
+  if (p.cutText !== undefined) result.cutText = parseText(p.cutText);
+  if (p.cutTexts !== undefined) {
+    if (!Array.isArray(p.cutTexts) || p.cutTexts.length > 20) throw new Error('Trop de blocs texte');
+    result.cutTexts = p.cutTexts.map(parseText);
+    if (new Set(result.cutTexts.map((item, i) => item.id ?? `legacy-${i}`)).size !== result.cutTexts.length) throw new Error('Identifiants de texte dupliqués');
   }
   if (p.holePositions !== undefined) {
     if (!Array.isArray(p.holePositions) || p.holePositions.length > 400) throw new Error('Trop de trous');

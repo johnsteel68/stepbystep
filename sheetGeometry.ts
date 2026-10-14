@@ -29,6 +29,8 @@ export interface HolePosition {
   /** Centred vector outline for font cutouts, in millimetres. */
   contour?: { x: number; y: number }[];
   textCutout?: boolean;
+  /** Identifie le bloc texte auquel appartient cette découpe. */
+  textBlockId?: string;
   templateOrigin?: 'frame' | 'mounting-plate';
   dist: number;
   offset: number;
@@ -43,6 +45,8 @@ export interface HolePosition {
 
 export interface LegConfig {
   holeContour?: { x: number; y: number }[];
+  /** Tous les textes découpés de l'aile. cutText reste pour les anciens liens. */
+  cutTexts?: import('./stencilText').StencilText[];
   cutText?: import('./stencilText').StencilText;
   id: string; // 'A' | 'B' | 'C' | 'D'
   label: string;

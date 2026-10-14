@@ -99,7 +99,6 @@ export default function TextPlacementView({ state, draft: externalDraft, onMove 
     // as committing/exporting: never visually move the block outside metal.
     try {
       if (targetId !== draft.legId) {
-        if (state.legs.find(l => l.id === targetId)?.cutText && targetId !== externalDraft?.legId) return;
         applyStencilText(state, targetId, next);
       } else { if (!validatePlacement) return; validatePlacement(next); }
     }
@@ -210,7 +209,10 @@ export default function TextPlacementView({ state, draft: externalDraft, onMove 
         <rect x={-pad} y={-pad} width={length + pad * 2} height={width + pad * 2} fill="white" />
         {/* Punch through the sheet rather than paint letters on it. Keep the
             actual vector contours, including stencil bridges, after saving. */}
-        {legs.flatMap((wing, wingIndex) => explicitHoles(wing, state).filter(h => !h.textCutout || wing.id !== draft?.legId).map((h, holeIndex) => {
+        {legs.flatMap((wing, wingIndex) => explicitHoles(wing, state).filter(h => !h.textCutout
+          || (wing.id === draft?.legId && h.textBlockId !== draft?.config.id
+            && !(h.textBlockId == null && draft?.config.id === `legacy-${wing.id}`))
+          || wing.id !== draft?.legId).map((h, holeIndex) => {
         const definition = { shape: h.shape ?? wing.holeShape, diam: h.diam ?? wing.holeDiam ?? 5, length: h.length ?? wing.holeLength ?? 25, width: h.width ?? wing.holeWidth ?? 12 };
         const x = legs.slice(0, wingIndex).reduce((sum, item) => sum + item.length, 0) + (wingIndex === state.bendCount ? wing.length - h.dist : h.dist);
         if (h.textCutout) return <g key={`${wingIndex}-${holeIndex}`} transform={`translate(${x},${h.offset})`} fill="black"><TextCutout cut={{ ...h, dist: 0, offset: 0 }} /></g>;

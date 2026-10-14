@@ -48,7 +48,7 @@ export function createWorkflow(state: SheetMetalState): WorkflowPage[] {
     ...(state.blankShape || state.bendCount === 0 ? [] : state.legs.slice(0, state.bendCount + 1).map((leg, legIndex) => ({ section: 6, title: `Longueur aile ${leg.id}`, legIndex, legId: leg.id }))),
     ...(state.blankShape || state.bendCount === 0 ? [] : [{ section: 6, title: 'Largeur', width: true }]),
     ...(state.blankShape && !['rectangle', 'square', 'frame', 'mounting-plate'].includes(state.blankShape) ? [] : [{ section: 7, title: 'Arrondis des coins' }]),
-    ...(!textAvailabilityIssue(state) || state.legs.some(leg => leg.cutText) ? [{ section: 12, title: 'Texte' }] : []),
+    ...(!textAvailabilityIssue(state) || state.legs.some(leg => leg.cutText || leg.cutTexts?.length) ? [{ section: 12, title: 'Texte' }] : []),
     { section: 8, title: 'Trous' },
     { section: 9, title: 'Commander' },
   ];
