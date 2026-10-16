@@ -41,4 +41,6 @@ test('the order section no longer offers separate PDF download or deck upload bu
   assert.match(section, /<OrderButton onOrder=\{handleSendToDeck\}/);
   assert.doesNotMatch(section, /onClick=\{handleDownload(?:Plan)?\}|Envoyer dans le deck|Retélécharger|Télécharger le plan PDF/);
   assert.match(section, /href=\{readyDeck.url\}/);
+  assert.match(section, /stepDownloadUnlocked/);
+  assert.match(section, /onClick=\{handleDownloadStep\}/);
 });

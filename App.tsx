@@ -9,6 +9,7 @@ import { useDimensionFeedback } from './useDimensionFeedback';
 import { normalizeFormedBlank, blankHoleAllowed } from './formedBlank';
 import { createDefaultProject, selectProjectBendCount } from './projectDefaults';
 import { useManufacturingExports } from './hooks/useManufacturingExports';
+import { advanceKonamiCode } from './konamiCode';
 import OrderButton from './components/OrderButton';
 import type { GrainDirection } from './technicalDrawing';
 import { resizeDraftHole, explicitHoles, saveHoles, holeSeries, clearAllHoles, type HoleSizeField } from './holeEditing';
@@ -100,6 +101,8 @@ export default function App({ embedded = false }: { embedded?: boolean }) {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [openStep, setOpenStep] = useState(sharedProject ? 9 : 4);
   const [proMode, setProMode] = useState(false);
+  const [stepDownloadUnlocked, setStepDownloadUnlocked] = useState(false);
+  const konamiProgress = useRef(0);
   const { appRoot, mobileDock, setMobileDock } = useMobileWorkspace(setProMode);
   const [guidedStep, setGuidedStep] = useState(() => sharedProject ? createWorkflow(normalizeFormedBlank(sharedProject.state)).length : 1);
   const [selectedProBendIndex, setSelectedProBendIndex] = useState(0);
@@ -110,6 +113,25 @@ export default function App({ embedded = false }: { embedded?: boolean }) {
   const controlScrollRef = useRef<HTMLDivElement>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const stepClass = (step: number) => `workflow-step ${openStep === step ? 'is-open' : 'is-closed'}`;
+
+  // Deliberately undocumented easter egg: the STEP download is shown only in
+  // Pro mode after the classic Konami sequence, never in guided ordering.
+  useEffect(() => {
+    if (!proMode || embedded || stepDownloadUnlocked) {
+      konamiProgress.current = 0;
+      return;
+    }
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.repeat) return;
+      const target = event.target;
+      if (target instanceof HTMLElement && (target.isContentEditable || target.closest('input, textarea, select, [contenteditable="true"]'))) return;
+      const result = advanceKonamiCode(konamiProgress.current, event.key);
+      konamiProgress.current = result.progress;
+      if (result.unlocked) setStepDownloadUnlocked(true);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [proMode, embedded, stepDownloadUnlocked]);
 
   const [state, setProjectState] = useState<SheetMetalState>(() => sharedProject?.state ? normalizeFormedBlank(sharedProject.state) : createDefaultProject());
   // Atomic barrier for shape/angle/thickness changes: never render a partially
@@ -758,7 +780,7 @@ export default function App({ embedded = false }: { embedded?: boolean }) {
   };
 
   const { loading, pdfLoading, sendingToDeck, readyDeck, setReadyDeck,
-    handleDownload, handleSendToDeck } = useManufacturingExports({
+    handleDownload, handleDownloadStep, handleSendToDeck } = useManufacturingExports({
       guided: !proMode,
       state, grainDirection, feasibility, setError, setSuccessMsg, setShowFeasibilityModal,
     });
@@ -1142,6 +1164,9 @@ export default function App({ embedded = false }: { embedded?: boolean }) {
             </button>
           </div>
           <OrderButton onOrder={handleSendToDeck} busy={loading || pdfLoading || sendingToDeck} feasible={feasibility.isFeasible} />
+          {proMode && stepDownloadUnlocked && <button type="button" className="audit-link mt-3 w-full justify-center" onClick={handleDownloadStep} disabled={loading || !feasibility.isFeasible}>
+            <Download size={16} /> Télécharger le STEP · fichier seul
+          </button>}
           {!feasibility.isFeasible && <p className="step-intro" role="status">Corrigez les points signalés dans les vérifications avant de commander.</p>}
           <div className="technical-plan-options">
             <p>Plan atelier généré automatiquement : cotes, perçages et face de finition.</p>

@@ -94,6 +94,27 @@ export function useManufacturingExports({ state, grainDirection, feasibility, gu
     }
   };
 
+  // Hidden Pro-mode export: deliver the STEP itself, without the plan archive.
+  const handleDownloadStep = async () => {
+    if (!feasibility.isFeasible) {
+      setError("Export STEP bloqué : la pièce ne respecte pas les critères de fabricabilité atelier. Consultez le rapport d'audit pour corriger.");
+      setShowFeasibilityModal(true);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const file = await createStepExportFile(structuredClone(state));
+      downloadExport(file, file.name);
+      setSuccessMsg('Fichier STEP téléchargé.');
+    } catch (e) {
+      console.error(e);
+      setError('Erreur lors de la génération du fichier STEP.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSendToDeck = async () => {
     if (!feasibility.isFeasible) {
       setError("Envoi vers le deck bloqué : la pièce ne respecte pas les critères de fabricabilité atelier.");
@@ -137,5 +158,5 @@ export function useManufacturingExports({ state, grainDirection, feasibility, gu
   };
 
   return { loading, pdfLoading, sendingToDeck, readyDeck, setReadyDeck,
-    handleDownloadPlan, handleDownload, handleSendToDeck };
+    handleDownloadPlan, handleDownload, handleDownloadStep, handleSendToDeck };
 }
